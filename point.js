@@ -18,7 +18,7 @@ export class Point extends Array {
      * Calculates distance between first and second point
      * @param {Point} first 
      * @param {Point} second 
-     * @returns 
+     * @returns {Number}
      */
     static distance(first, second) {
         return Math.sqrt(Math.pow(second.x - first.x, 2) + Math.pow(second.y - first.y, 2));
