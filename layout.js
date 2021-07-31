@@ -1,5 +1,6 @@
 import { Orientation } from './orientation.js';
 import { Point } from './point.js';
+import { Hexagon } from './hex.js';
 
 export class Layout {
     orientation;
@@ -20,7 +21,7 @@ export class Layout {
 
     /**
      * Converts hexagon to hexagon's center on screen
-     * @param {Hex} hexagon
+     * @param {Hexagon} hexagon
      * @returns {Point}
      */
     hexToPixel(hexagon) {
@@ -30,7 +31,7 @@ export class Layout {
     /**
      * Converts screen pixel to hexagon
      * @param {Point} pixel
-     * @returns {Hex}
+     * @returns {Hexagon}
      */
     pixelToHex(pixel) {
         return Layout.pixelToHex(this, pixel);
@@ -47,7 +48,7 @@ export class Layout {
 
     /**
      * Calculates every corner in hexagon
-     * @param {Hex} hexagon
+     * @param {Hexagon} hexagon
      * @returns {Point[]}
      */
     hexagonCorners(hexagon) {
@@ -57,7 +58,7 @@ export class Layout {
     /**
      * Converts hexagon to hexagon's center on screen
      * @param {Layout} layout
-     * @param {Hex} hexagon
+     * @param {Hexagon} hexagon
      * @returns {Point}
      */
     static hexToPixel(layout, hexagon) {
@@ -72,14 +73,14 @@ export class Layout {
      * Converts screen pixel to hexagon
      * @param {Layout} layout
      * @param {Point} pixel
-     * @returns {Hex}
+     * @returns {Hexagon}
      */
     static pixelToHex(layout, pixel) {
         const o = layout.orientation;
         const pt = new Point((pixel.x - layout.origin.x) / layout.size.x, (pixel.y - layout.origin.y) / layout.size.y);
         const q = o.b[0] * pt.x + o.b[1] * pt.y;
         const r = o.b[2] * pt.x + o.b[3] * pt.y;
-        return new Hex(q, r, -q - r);
+        return new Hexagon(q, r, -q - r);
     }
 
     /**
@@ -98,7 +99,7 @@ export class Layout {
     /**
      * Calculates every corner in hexagon
      * @param {Layout} layout
-     * @param {Hex} hexagon
+     * @param {Hexagon} hexagon
      * @returns {Point[]}
      */
     static hexagonCorners(layout, hexagon) {

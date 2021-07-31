@@ -1,11 +1,11 @@
 /**
  * 3 axis 2 dimensional coordinate system
  */
-export class Hex extends Array {
+export class Hexagon extends Array {
 
-    static NEIGHBOR_DIRECTIONS = [new Hex(0, -1, -1), new Hex(1, 1, 0), new Hex(-1, 0, -1), new Hex(0, 1, 1), new Hex(-1, -1, 0), new Hex(1, 0, 1)];
-    static DIAGONAL_DIRECTIONS = [new Hex(2, -1, -1), new Hex(1, 1, -2), new Hex(-1, 2, -1), new Hex(-2, 1, 1), new Hex(-1, -1, 2), new Hex(1, -2, 1)];
-    static DIRECTIONS = [...Hex.NEIGHBOR_DIRECTIONS, ...Hex.DIAGONAL_DIRECTIONS];
+    static NEIGHBOR_DIRECTIONS = [new Hexagon(0, -1, -1), new Hexagon(1, 1, 0), new Hexagon(-1, 0, -1), new Hexagon(0, 1, 1), new Hexagon(-1, -1, 0), new Hexagon(1, 0, 1)];
+    static DIAGONAL_DIRECTIONS = [new Hexagon(2, -1, -1), new Hexagon(1, 1, -2), new Hexagon(-1, 2, -1), new Hexagon(-2, 1, 1), new Hexagon(-1, -1, 2), new Hexagon(1, -2, 1)];
+    static DIRECTIONS = [...Hexagon.NEIGHBOR_DIRECTIONS, ...Hexagon.DIAGONAL_DIRECTIONS];
     
     /**
      * Creates Hex with given coords
@@ -22,74 +22,74 @@ export class Hex extends Array {
 
     /**
      * 
-     * @param {Hex} other 
+     * @param {Hexagon} other 
      * @returns {Boolean}
      */
     equals(other) {
-        return Hex.equals(this, other);
+        return Hexagon.equals(this, other);
     }
 
     /**
      * 
-     * @param {Hex} other 
-     * @returns {Hex}
+     * @param {Hexagon} other 
+     * @returns {Hexagon}
      */
     add(other) {
-        return Hex.add(this, other);
+        return Hexagon.add(this, other);
     }
 
     /**
      * 
-     * @param {Hex} other 
-     * @returns {Hex}
+     * @param {Hexagon} other 
+     * @returns {Hexagon}
      */
     subtract(other) {
-        return Hex.subtract(this, other);
+        return Hexagon.subtract(this, other);
     }
 
     /**
      * 
      * @param {Number} scalar 
-     * @returns {Hex}
+     * @returns {Hexagon}
      */
     multiply(scalar) {
-        return Hex.multiply(this, scalar);
+        return Hexagon.multiply(this, scalar);
     }
 
     /**
      * 
-     * @param {Hex} other 
+     * @param {Hexagon} other 
      * @returns {Number}
      */
     length(other) {
-        return Hex.length(this, other);
+        return Hexagon.length(this, other);
     }
 
     /**
      * 
-     * @param {Hex} other 
+     * @param {Hexagon} other 
      * @returns {Number}
      */
     distance(other) {
-        return Hex.distance(this, other);
+        return Hexagon.distance(this, other);
     }
 
     /**
      * 
      * @param {Number} directionIndex 
-     * @returns {Hex}
+     * @returns {Hexagon}
      */
     direction(directionIndex) {
-        return Hex.direction(directionIndex);
+        return Hexagon.direction(directionIndex);
     }
 
     /**
      * 
      * @param {Number} directionIndex 
-     * @returns {Hex}
+     * @returns {Hexagon}
      */
     neighbor(directionIndex) {
-        return Hex.neighbor(this, directionIndex);
+        return Hexagon.neighbor(this, directionIndex);
     }
 
     /**
@@ -101,8 +101,8 @@ export class Hex extends Array {
 
     /**
      * Floating point safe
-     * @param {Hex} first 
-     * @param {Hex} second 
+     * @param {Hexagon} first 
+     * @param {Hexagon} second 
      * @returns {Boolean}
      */
     static equals(first, second) {
@@ -111,37 +111,37 @@ export class Hex extends Array {
 
     /**
      * 
-     * @param {Hex} first 
-     * @param {Hex} second 
-     * @returns {Hex}
+     * @param {Hexagon} first 
+     * @param {Hexagon} second 
+     * @returns {Hexagon}
      */
     static add(first, second) {
-        return new Hex(first.q + second.q, first.r + second.r, first.s + second.s);
+        return new Hexagon(first.q + second.q, first.r + second.r, first.s + second.s);
     }
 
     /**
      * 
-     * @param {Hex} first 
-     * @param {Hex} second 
-     * @returns {Hex}
+     * @param {Hexagon} first 
+     * @param {Hexagon} second 
+     * @returns {Hexagon}
      */
     static subtract(first, second) {
-        return new Hex(first.q - second.q, first.r - second.r, first.s - second.s);
+        return new Hexagon(first.q - second.q, first.r - second.r, first.s - second.s);
     }
 
     /**
      * 
-     * @param {Hex} source 
+     * @param {Hexagon} source 
      * @param {Number} scalar 
-     * @returns {Hex}
+     * @returns {Hexagon}
      */
     static multiply(source, scalar) {
-        return new Hex(source.q * scalar, source.r * scalar, source.s * scalar);
+        return new Hexagon(source.q * scalar, source.r * scalar, source.s * scalar);
     }
 
     /**
      * 
-     * @param {Hex} object 
+     * @param {Hexagon} object 
      * @returns {Number}
      */
     static length(object) {
@@ -150,8 +150,8 @@ export class Hex extends Array {
 
     /**
      * 
-     * @param {Hex} first 
-     * @param {Hex} second
+     * @param {Hexagon} first 
+     * @param {Hexagon} second
      * @returns {Number} 
      */
     static distance(first, second) {
@@ -161,20 +161,20 @@ export class Hex extends Array {
     /**
      * 
      * @param {Number} directionIndex 
-     * @returns {Hex}
+     * @returns {Hexagon}
      */
     static direction(directionIndex) {
-        return Hex.DIRECTIONS[directionIndex % Hex.DIRECTIONS.length];
+        return Hexagon.DIRECTIONS[directionIndex % Hexagon.DIRECTIONS.length];
     }
 
     /**
      * 
-     * @param {Hex} object 
+     * @param {Hexagon} object 
      * @param {Number} direction 
-     * @returns {Hex}
+     * @returns {Hexagon}
      */
     static neighbor(object, directionIndex) {
-        return object.add(Hex.direction(directionIndex));
+        return object.add(Hexagon.direction(directionIndex));
     }
 
     get q() {
