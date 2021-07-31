@@ -1,75 +1,51 @@
-import { Hexagon } from './hexagon.js';
-import { Point } from './point.js';
-import { Layout } from './layout.js';
-import { Orientation } from './orientation.js';
+import { Polyfills } from './polyfills.js';
 
-console.log('test');
+// Prepare all Workers
+const mainWorker = new Worker('./mainWorker.js', {
+    type: 'module'
+});
 
-const canvas = document.getElementById('mainCanvas');
-const ctx = canvas.getContext('2d');
-// canvas.width = window.screen.width;
-// canvas.height = window.screen.height;
+// Transfer ownership of variables
+const mainCanvas = document.getElementById('mainCanvas').transferControlToOffscreen();
 
-canvas.width = window.innerWidth;
-canvas.height = window.innerHeight;
+// Run constructor inside worker
+mainWorker.postMessage({
+    function: 'constructor',
+    mainCanvas: mainCanvas,
+    window: Polyfills.createWindow(),
+}, [mainCanvas]);
 
-ctx.beginPath();
-ctx.moveTo(0, 0);
-ctx.lineTo(500, 500);
-ctx.strokeStyle = 'green';
-ctx.stroke();
-ctx.strokeStyle = 'red';
+console.log(mainCanvas);
 
 
-/**
- * 
- * @param {Layout} layout 
- * @param {Hexagon} hexagon 
- */
-function drawHex(layout, hexagon) {
-    const corners = layout.hexagonCorners(hexagon);
-
-    ctx.beginPath();
-    ctx.moveTo(...corners[0]);
-
-    for (let i = 1; i < corners.length; i++) {
-        ctx.lineTo(...corners[i]);
-    }
-
-    ctx.closePath();
-    ctx.stroke();
+// Forward window events
+window.onresize = event => {
+    mainWorker.postMessage({
+        function: 'windowOnResize',
+        window: Polyfills.createWindow()
+    });
 }
 
-const layout = new Layout(Orientation.FLAT, new Point(20, 20), new Point(500, 500));
+// Keyboard events
+window.onkeydown = event => mainWorker.postMessage({
+    function: 'windowOnKeyDown',
+    key: event.key
+});
 
-window.onpointermove = ({pageX, pageY}) => {
-    const point = new Point(pageX, pageY);
-    layout.origin = point;
-}
+window.onkeyup = event => mainWorker.postMessage({
+    function: 'windowOnKeyUp',
+    key: event.key
+});
 
-let zoom = 20;
+// Etc. eg. PointerEvents
+window.onpointermove = ({pageX, pageY}) => mainWorker.postMessage({
+    function: 'onPointerMove',
+    pageX: pageX,
+    pageY: pageY
+});
 
-window.onwheel = ({deltaY}) => {
-    zoom -= Math.sign(deltaY);
-    layout.size.x = zoom;
-    layout.size.y = zoom;
-}
-
-function loop() {
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-    for (let q = -5; q < 5; q++) {
-        for (let r = -5; r < 5; r++) {
-            for (let s = -5; s < 5; s++) {
-                const hexagon = new Hexagon(q, r, s);
-                drawHex(layout, hexagon);
-            }
-        }
-    }
-
-    window.requestAnimationFrame(loop);
-}
-
-loop();
-
-
+window.onwheel = ({deltaX, deltaY}) => mainWorker.postMessage({
+    function: 'onWheel',
+    deltaX: deltaX,
+    deltaY: deltaY
+});
