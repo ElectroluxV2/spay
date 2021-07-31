@@ -1,5 +1,5 @@
 export class Orientation {
-    static POINTY = new Orientation([Math.sqrt(3) / 3, -1 / 3, 0, 2 / 3], [Math.sqrt(3), Math.sqrt(3) / 2, 0, 3 / 2], 0);
+    static POINTY = new Orientation([Math.sqrt(3) / 3, -1 / 3, 0, 2 / 3], [Math.sqrt(3), Math.sqrt(3) / 2, 0, 3 / 2], 0.5);
     static FLAT = new Orientation([0 / 3, 0, -1 / 3, Math.sqrt(3) / 3], [3 / 2, 0, Math.sqrt(3) / 2, Math.sqrt(3)], 0);
 
     backwardMatrix;
