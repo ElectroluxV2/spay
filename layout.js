@@ -62,7 +62,6 @@ export class Layout {
      * @returns {Point}
      */
     static hexToPixel(layout, hexagon) {
-        console.log(layout);
         const o = layout.orientation;
         const x = (o.f[0] * hexagon.q + o.f[1] * hexagon.r) * layout.size.x;
         const y = (o.f[2] * hexagon.q + o.f[3] * hexagon.r) * layout.size.y;
