@@ -1,6 +1,6 @@
 import { Orientation } from './orientation.js';
 import { Point } from './point.js';
-import { Hexagon } from './hex.js';
+import { Hexagon } from './hexagon.js';
 
 export class Layout {
     orientation;
