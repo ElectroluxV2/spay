@@ -79,7 +79,25 @@ export class Layout {
         const pt = new Point((pixel.x - layout.origin.x) / layout.size.x, (pixel.y - layout.origin.y) / layout.size.y);
         const q = o.b[0] * pt.x + o.b[1] * pt.y;
         const r = o.b[2] * pt.x + o.b[3] * pt.y;
-        return new Hexagon(q, r, -q - r);
+        const s = -q - r;
+
+        let qi = Math.round(q);
+        let ri = Math.round(r);
+        let si = Math.round(s);
+
+        const qDiff = Math.abs(qi - q);
+        const rDiff = Math.abs(ri - r);
+        const sDiff = Math.abs(si - s);
+
+        if (qDiff > rDiff && qDiff > sDiff) {
+            qi = -ri - si;
+        } else if (rDiff > sDiff) {
+            ri = -qi - si;
+        } else {
+            si = -qi - ri;
+        }
+
+        return new Hexagon(qi, ri, si);
     }
 
     /**
