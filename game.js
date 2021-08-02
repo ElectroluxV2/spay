@@ -61,14 +61,16 @@ export class Game {
         this.#mainCanvasContext.reset();
         this.#mainCanvasContext.strokeStyle = 'red';
 
-        const count = 5;
 
-        for (let q = -count; q < count; q++) {
-            for (let r = -count; r < count; r++) {
-                for (let s = -count; s < count; s++) {
-                    const hexagon = new Hexagon(q, r, s);
-                    this.#drawHexagon(hexagon);
-                }
+        const mapRadius = 50;
+
+        for (let q = -mapRadius; q <= mapRadius; q++) {
+            const r1 = Math.max(-mapRadius, -q - mapRadius);
+            const r2 = Math.min(mapRadius, -q + mapRadius);
+
+            for (let r = r1; r <= r2; r++) {
+                const hexagon = new Hexagon(q, r, -q-r);
+                this.#drawHexagon(hexagon);
             }
         }
     
