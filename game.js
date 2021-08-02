@@ -29,9 +29,9 @@ export class Game {
      * @param {PointerEvent} PointerEvent 
      */
     onPointerMove(pageX, pageY) {
-        const point = new Point(pageX, pageY);
-        this.#selectedHexagon = this.#layout.pixelToHex(point);
-        // this.#layout.origin = new Point(pageX, pageY);
+        // const point = new Point(pageX, pageY);
+        // this.#selectedHexagon = this.#layout.pixelToHex(point);
+        this.#layout.origin = new Point(pageX, pageY);
     }
 
     /**
@@ -59,31 +59,52 @@ export class Game {
         this.#mainCanvasContext.closePath();
         this.#mainCanvasContext.stroke();
     }
+
+    drawNode(current, depth = 0) {
+        const MAX_DEPTH = 50;
+        const index = Math.floor(Math.random() * 5);
+        const neighbor = current.neighbor(index);
+
+
+         ++depth < MAX_DEPTH && this.drawNode(neighbor, depth);
+         depth < MAX_DEPTH / 2 && Math.random() > 0.5 && this.drawNode(neighbor, 40);
+
+        this.#drawHexagon(neighbor);
+    }
     
     loop() {
         this.#mainCanvasContext.reset();
         this.#mainCanvasContext.strokeStyle = 'red';
 
 
-        const mapRadius = 10;
+        // const mapRadius = 10;
 
-        for (let q = -mapRadius; q <= mapRadius; q++) {
-            const r1 = Math.max(-mapRadius, -q - mapRadius);
-            const r2 = Math.min(mapRadius, -q + mapRadius);
+        // for (let q = -mapRadius; q <= mapRadius; q++) {
+        //     const r1 = Math.max(-mapRadius, -q - mapRadius);
+        //     const r2 = Math.min(mapRadius, -q + mapRadius);
 
-            for (let r = r1; r <= r2; r++) {
-                const hexagon = new Hexagon(q, r, -q-r);
+        //     for (let r = r1; r <= r2; r++) {
+        //         const hexagon = new Hexagon(q, r, -q-r);
 
-                if (this.#selectedHexagon?.equals(hexagon)) {
-                    this.#mainCanvasContext.strokeStyle = 'green';
-                } else {
-                    this.#mainCanvasContext.strokeStyle = 'red';
-                }
+        //         if (this.#selectedHexagon?.equals(hexagon)) {
+        //             this.#mainCanvasContext.strokeStyle = 'green';
+        //         } else {
+        //             this.#mainCanvasContext.strokeStyle = 'red';
+        //         }
 
-                this.#drawHexagon(hexagon);
-            }
-        }
+        //         this.#drawHexagon(hexagon);
+        //     }
+        // }
     
-        requestAnimationFrame(this.loop.bind(this));
+
+        const main = new Hexagon(0, 0, 0);
+        this.#drawHexagon(main);
+
+        console.log(main);
+
+        this.drawNode(main);
+
+
+        // requestAnimationFrame(this.loop.bind(this));
     }
 }
