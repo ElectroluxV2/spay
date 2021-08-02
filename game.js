@@ -9,6 +9,7 @@ export class Game {
     #mainCanvasContext;
     #window;
     #zoom;
+    #selectedHexagon;
     keyboardStates;
 
     constructor(mainCanvas, window) {
@@ -28,7 +29,9 @@ export class Game {
      * @param {PointerEvent} PointerEvent 
      */
     onPointerMove(pageX, pageY) {
-        this.#layout.origin = new Point(pageX, pageY);
+        const point = new Point(pageX, pageY);
+        this.#selectedHexagon = this.#layout.pixelToHex(point);
+        // this.#layout.origin = new Point(pageX, pageY);
     }
 
     /**
@@ -62,7 +65,7 @@ export class Game {
         this.#mainCanvasContext.strokeStyle = 'red';
 
 
-        const mapRadius = 50;
+        const mapRadius = 10;
 
         for (let q = -mapRadius; q <= mapRadius; q++) {
             const r1 = Math.max(-mapRadius, -q - mapRadius);
@@ -70,6 +73,13 @@ export class Game {
 
             for (let r = r1; r <= r2; r++) {
                 const hexagon = new Hexagon(q, r, -q-r);
+
+                if (this.#selectedHexagon?.equals(hexagon)) {
+                    this.#mainCanvasContext.strokeStyle = 'green';
+                } else {
+                    this.#mainCanvasContext.strokeStyle = 'red';
+                }
+
                 this.#drawHexagon(hexagon);
             }
         }
