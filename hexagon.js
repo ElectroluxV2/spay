@@ -1,3 +1,5 @@
+import { SzudziksPairing } from './szudziksPairing.js';
+
 /**
  * 3 axis 2 dimensional coordinate system
  */
@@ -93,10 +95,18 @@ export class Hexagon extends Array {
     }
 
     /**
-     * @returns {String} HashCode inf form of string, used in Map
+     * @returns {String} String representation of hexagon
+     */
+    toString() {
+        return `${this.q.toString(16)}|${this.r.toString(16)}|${this.s.toString(16)}`;
+    }
+
+    /**
+     * Returns hash code based on coords
+     * @returns {Number}
      */
     hashCode() {
-        return `${this.q.toString(16)}|${this.r.toString(16)}|${this.s.toString(16)}`;
+        return Hexagon.hashCode(this);
     }
 
     /**
@@ -175,6 +185,15 @@ export class Hexagon extends Array {
      */
     static neighbor(object, directionIndex) {
         return object.add(Hexagon.direction(directionIndex));
+    }
+
+    /**
+     * Returns hash code based on coords
+     * @param {Hexagon} object 
+     * @returns {Number}
+     */
+    static hashCode(object) {
+        return SzudziksPairing.pair(object.q, object.r);
     }
 
     get q() {
