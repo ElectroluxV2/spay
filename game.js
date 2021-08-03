@@ -79,6 +79,32 @@ export class Game {
         return Math.max(Math.max(1, Math.min(this.#zoom - this.#initialZoom + initialSize, 10)) / 2, 1);
     }
 
+
+    setColor() {
+
+        if (Math.random() > 0.3) {
+            this.#mainCanvasContext.strokeStyle = '#111111';
+            this.#mainCanvasContext.fillStyle = '#DDDDDD';
+        } else if (Math.random() > 0.3) {
+            this.#mainCanvasContext.strokeStyle = '#111111';
+            this.#mainCanvasContext.fillStyle = '#FF4136';
+        } else if (Math.random() > 0.3) {
+            this.#mainCanvasContext.strokeStyle = '#111111';
+            this.#mainCanvasContext.fillStyle = '#01FF70';
+        } else if (Math.random() > 0.3) {
+            this.#mainCanvasContext.strokeStyle = '#111111';
+            this.#mainCanvasContext.fillStyle = '#FFDC00';
+        } else if (Math.random() > 0.3) {
+            this.#mainCanvasContext.strokeStyle = '#111111';
+            this.#mainCanvasContext.fillStyle = '#F012BE';
+        } else {
+            this.#mainCanvasContext.strokeStyle = '#111111';
+            this.#mainCanvasContext.fillStyle = '#FF851B';
+        }
+
+        
+    }
+
     /**
      * 
      * @param {Hexagon} hexagon 
@@ -105,10 +131,9 @@ export class Game {
 
         this.#mainCanvasContext.lineJoin = 'bevel';
         this.#mainCanvasContext.lineWidth = this.scaleFromZoom(3);
-        this.#mainCanvasContext.strokeStyle = '#111111';
-        this.#mainCanvasContext.fillStyle = '#DDDDDD';
 
         for (const hexagon of this.#worldMap.hexagons) {
+            this.setColor();
             this.#drawHexagon(hexagon);
         }
     
