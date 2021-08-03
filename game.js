@@ -18,8 +18,8 @@ export class Game {
     constructor(mainCanvas, window) {
         console.log('game');
 
-        this.#layout = new Layout(Orientation.FLAT, new Point(20, 20), new Point(500, 500));
         this.#zoom = 20;
+        this.#layout = new Layout(Orientation.FLAT, new Point(this.#zoom, this.#zoom), new Point(500, 500));
         this.#window = window;
         this.#mainCanvas = mainCanvas;
         this.#mainCanvasContext = mainCanvas.getContext('2d');
@@ -82,7 +82,7 @@ export class Game {
     loop() {
         this.#mainCanvasContext.reset();
         this.#mainCanvasContext.fillStyle = 'rebeccapurple';
-        this.#mainCanvasContext.fillRect(0, 0, this.#mainCanvas.width, this.#mainCanvas.height);
+        this.#mainCanvasContext.fillRect(0, 0, this.#mainCanvas.width, this.#mainCanvasContext.height);
         this.#mainCanvasContext.strokeStyle = 'red';
 
         for (const hexagon of this.#worldMap.hexagons) {
