@@ -10,6 +10,7 @@ export class Game {
     #window;
     #zoom;
     #selectedHexagon;
+    #hexagonMap;
     keyboardStates;
 
     constructor(mainCanvas, window) {
@@ -20,6 +21,7 @@ export class Game {
         this.#window = window;
         this.#mainCanvas = mainCanvas;
         this.#mainCanvasContext = mainCanvas.getContext('2d');
+        this.#hexagonMap = new Map();
         this.keyboardStates = new Map();
 
         this.loop();
@@ -60,14 +62,44 @@ export class Game {
         this.#mainCanvasContext.stroke();
     }
 
-    drawNode(current, depth = 0) {
+    genv1(current, depth = 0) {
         const MAX_DEPTH = 50;
         const index = Math.floor(Math.random() * 5);
         const neighbor = current.neighbor(index);
 
 
-         ++depth < MAX_DEPTH && this.drawNode(neighbor, depth);
-         depth < MAX_DEPTH / 2 && Math.random() > 0.5 && this.drawNode(neighbor, 40);
+         ++depth < MAX_DEPTH && this.genv1(neighbor, depth);
+         depth < MAX_DEPTH / 2 && Math.random() > 0.5 && this.genv1(neighbor, 40);
+
+        this.#drawHexagon(neighbor);
+    }
+
+    genv2random(min, max) {
+        const range = max - min + 1
+        const bytes_needed = Math.ceil(Math.log2(range) / 8)
+        const cutoff = Math.floor((256 ** bytes_needed) / range) * range
+        const bytes = new Uint8Array(bytes_needed)
+        let value
+        do {
+            crypto.getRandomValues(bytes)
+            value = bytes.reduce((acc, x, n) => acc + x * 256 ** n, 0)
+        } while (value >= cutoff)
+        return min + value % range
+    }
+
+    genv2(current, min = 10, max = 50, stepsLeft = 1000) {
+
+        const neighborIndex = this.genv2random(0, 5);
+        const neighbor = current.neighbor(neighborIndex);
+
+        this.#hexagonMap.set(neighbor.hashCode(), neighbor);
+
+        if ( --stepsLeft >= 0 && this.#hexagonMap.size < max) {
+            this.genv2(neighbor, min, max, stepsLeft);
+        } else if (this.#hexagonMap.size < 10) {
+            this.genv2(current, min, max, 1);
+        }
+        
 
         this.#drawHexagon(neighbor);
     }
@@ -98,11 +130,13 @@ export class Game {
     
 
         const main = new Hexagon(0, 0, 0);
+        this.#hexagonMap.set(main.hashCode(), main)
+        // this.genv1(main);
+        this.genv2(main, 100, 500);
+
+
+        this.#mainCanvasContext.strokeStyle = 'yellow';
         this.#drawHexagon(main);
-
-        console.log(main);
-
-        this.drawNode(main);
 
 
         // requestAnimationFrame(this.loop.bind(this));
