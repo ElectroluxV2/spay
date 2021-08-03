@@ -85,8 +85,8 @@ export class Game {
      * @param {WheelEvent} WheelEvent 
      */
     onWheel(deltaX, deltaY) {
-        this.#worldMap.layout.zoom -= Math.sign(deltaY);
-        this.#worldMap.layout.size.x = this.#worldMap.layout.size.y = this.#worldMap.layout.zoom;
+        this.#worldMap.zoom -= Math.sign(deltaY);
+        this.#worldMap.layout.size.x = this.#worldMap.layout.size.y = this.#worldMap.zoom;
     }
 
     

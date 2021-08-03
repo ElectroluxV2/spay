@@ -146,6 +146,14 @@ export class WorldMap {
         }
     }
 
+    get zoom() {
+        return this.#zoom;
+    }
+
+    set zoom(value) {
+        this.#zoom = value;
+    }
+
     get layout() {
         return this.#layout;
     }
