@@ -9,7 +9,7 @@ export class WorldMap {
         const main = new Hexagon(0, 0, 0);
         this.#hexagons.set(main.hashCode(), main);
 
-        this.#generatorV2(main, 400, 500, 1000);
+        this.#generatorV3(main, 100000, 100000, 2000);
     }
 
     #generatorV1(current, depth = 0, maxDepth = 50) {
@@ -50,6 +50,18 @@ export class WorldMap {
 
         } else if (this.#hexagons.size < 10) {
             this.#generatorV2(current, min, max, 1);
+        }
+    }
+
+    #generatorV3(current, min = 50000, max = 10000) {
+        for (let i = 0; i < this.#cryptoRandomRange(min, max); i++) {
+
+            const neighborIndex = this.#cryptoRandomRange(0, 5);
+            const neighbor = current.neighbor(neighborIndex);
+
+            this.#hexagons.set(neighbor.hashCode(), neighbor);
+
+            current = neighbor;
         }
     }
 
