@@ -56,6 +56,27 @@ export class Layout {
     }
 
     /**
+     * Constructs Path2D with hexagon fill
+     * @param {Hexagon} hexagon
+     * @param {Point[]} corners
+     * @returns {Path2D}
+     */
+    hexagonFillPath2D(hexagon, corners = layout.hexagonCorners(hexagon)) {
+        return Layout.hexagonFillPath2D(this, hexagon, corners);
+    }
+
+    /**
+     * 
+     * @param {Hexagon} hexagon 
+     * @param {Number} directionIndex 
+     * @param {Point[]} corners 
+     * @returns {Path2D}
+     */
+    hexagonBorderPartPath2D(hexagon, directionIndex, corners = layout.hexagonCorners(hexagon)) {
+        return Layout.hexagonBorderPartPath2D(this, hexagon, directionIndex, corners);
+    }
+
+    /**
      * Converts hexagon to hexagon's center on screen
      * @param {Layout} layout
      * @param {Hexagon} hexagon
@@ -129,5 +150,39 @@ export class Layout {
         }
 
         return corners;
+    }
+
+    /**
+     * Constructs Path2D with hexagon fill
+     * @param {Layout} layout
+     * @param {Hexagon} hexagon 
+     * @param {Point[]} corners
+     * @returns {Path2D}
+     */
+    static hexagonFillPath2D(layout, hexagon, corners = layout.hexagonCorners(hexagon)) {
+        const path = new Path2D();
+        path.moveTo(...corners[0]);
+
+        for (let i = 1; i < corners.length; i++) {
+            path.lineTo(...corners[i]);
+        }
+
+        path.closePath();
+        return path;
+    }
+    
+    /**
+     * 
+     * @param {Layout} layout 
+     * @param {Hexagon} hexagon 
+     * @param {Number} directionIndex 
+     * @param {Point[]} corners 
+     * @returns {Path2D}
+     */
+    static hexagonBorderPartPath2D(layout, hexagon, directionIndex, corners = layout.hexagonCorners(hexagon)) {
+        const path = new Path2D();
+        path.moveTo(...corners[directionIndex]);
+        path.lineTo(...corners[(directionIndex + 1) % 6]);
+        return path;
     }
 }

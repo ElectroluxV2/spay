@@ -39,9 +39,10 @@ export class WorldMap {
 
         const main = new Hexagon(0, 0, 0);
         this.#hexagons.set(main.hashCode(), main);
+        this.#hexagonsColors.set(main.hashCode(), 9); 
 
-        // this.#generatorV3(main, 5000, 5000, 2000);
-        this.#generatorV2(main, 300, 400);
+        this.#generatorV3(main, 5000, 5000, 2000);
+        // this.#generatorV2(main, 30, 50);
         // this.#generatorV1(main);
 
         this.#layout.origin = this.#layout.hexToPixel(this.centerHexagon).multiply(0.5);
@@ -133,42 +134,80 @@ export class WorldMap {
      * @returns 
      */
     #scaleFromZoom(initialSize) {
-        return Math.max(Math.max(1, Math.min(this.zoom -this.#initialZoom + initialSize, 10)) / 2, 1);
+        return Math.max(Math.max(1, Math.min((this.zoom -this.#initialZoom + initialSize) * 0.1, 10)) / 2, 1);
+    }
+
+    #getColor(hexagon) {
+        return WorldMap.#COLORS[this.#hexagonsColors.get(hexagon.hashCode())];
     }
 
     /**
-     * 
-     * @param {Number} colorIndex
-     * @returns {String}
-     */
-    #getColorFromColorIndex(colorIndex) {
-        return WorldMap.#COLORS[colorIndex] ?? 'rebeccapurple';
-    }
-
-    /**
-     * 
+     * @param {OffscreenCanvasRenderingContext2D} context
      * @param {Hexagon} hexagon 
      */
-    #drawHexagon(context, hexagon) {
+    #drawHexagonFill(context, hexagon) {
         const corners = this.#layout.hexagonCorners(hexagon);
+        const fillPath = this.#layout.hexagonFillPath2D(hexagon, corners);
 
-        if (this.#hexagonsColors.has(hexagon.hashCode())) {
-            context.fillStyle = this.#getColorFromColorIndex(this.#hexagonsColors.get(hexagon.hashCode()));
-        } else {
-            context.fillStyle = '#DDDDDD';
+        const color = this.#getColor(hexagon) ?? '#DDDDDD';
+
+        // Fill
+        context.fillStyle = color;
+        context.fill(fillPath);
+    }
+
+    /**
+     * @param {OffscreenCanvasRenderingContext2D} context
+     * @param {Hexagon} hexagon 
+     */
+    #drawHexagonBordersBlackOnly(context, hexagon) {
+        const corners = this.#layout.hexagonCorners(hexagon);
+        const color = this.#getColor(hexagon);
+
+        for (let directionIndex = 0; directionIndex < 6; directionIndex++){
+            const borderNeighbor = hexagon.neighbor(directionIndex);
+            const colorNeighbor = this.#getColor(borderNeighbor);
+
+            if (!this.#hexagons.has(borderNeighbor.hashCode())) {
+                context.strokeStyle = '#111111';
+            } else if (color === colorNeighbor) {
+                continue;
+            } else {
+                context.strokeStyle = '#111111';
+            }
+
+            const border = this.#layout.hexagonBorderPartPath2D(hexagon, directionIndex, corners);
+            context.stroke(border);
         }
-        
+    }
 
-        context.beginPath();
-        context.moveTo(...corners[0]);
+    /**
+     * @param {OffscreenCanvasRenderingContext2D} context
+     * @param {Hexagon} hexagon 
+     */
+    #drawHexagonBordersColorOnly(context, hexagon) {
+        const corners = this.#layout.hexagonCorners(hexagon);
+        const color = this.#getColor(hexagon);
 
-        for (let i = 1; i < corners.length; i++) {
-            context.lineTo(...corners[i]);
+        for (let directionIndex = 0; directionIndex < 6; directionIndex++){
+            const borderNeighbor = hexagon.neighbor(directionIndex);
+            const colorNeighbor = this.#getColor(borderNeighbor);
+
+            if (!this.#hexagons.has(borderNeighbor.hashCode())) {
+                continue;
+            } else if (color === colorNeighbor) {
+                if (!color) {
+                    context.strokeStyle = '#DDDDDD';
+                } else {
+                    context.strokeStyle = color;
+                }
+            } else {
+                continue;
+            }
+
+            const border = this.#layout.hexagonBorderPartPath2D(hexagon, directionIndex, corners);
+            context.stroke(border);
         }
-
-        context.closePath();
-        context.stroke();
-        context.fill();
     }
 
     /**
@@ -182,8 +221,18 @@ export class WorldMap {
         context.strokeStyle = '#111111';
 
         for (const hexagon of this.hexagons) {
-            this.#drawHexagon(context, hexagon);
+            this.#drawHexagonFill(context, hexagon);
         }
+
+        context.lineCap = 'round';
+
+        for (const hexagon of this.hexagons) {
+            this.#drawHexagonBordersColorOnly(context, hexagon);
+        }
+
+        for (const hexagon of this.hexagons) {
+            this.#drawHexagonBordersBlackOnly(context, hexagon);
+        }        
     }
 
     get zoom() {

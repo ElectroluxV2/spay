@@ -5,7 +5,7 @@ import { SzudziksPairing } from './szudziksPairing.js';
  */
 export class Hexagon extends Array {
 
-    static NEIGHBOR_DIRECTIONS = [new Hexagon(1, 0, -1), new Hexagon(1, -1, 0), new Hexagon(0, -1, 1), new Hexagon(-1, 0, 1), new Hexagon(-1, 1, 0), new Hexagon(0, 1, -1)];
+    static NEIGHBOR_DIRECTIONS = [new Hexagon(1, -1, 0), new Hexagon(0, -1, 1), new Hexagon(-1, 0, 1), new Hexagon(-1, 1, 0), new Hexagon(0, 1, -1), new Hexagon(1, 0, -1)];
     static DIAGONAL_DIRECTIONS = [new Hexagon(1, -2, 1), new Hexagon(-1, -1, 2), new Hexagon(-2, 1, 1), new Hexagon(-1, 2, -1), new Hexagon(1, 1, -2), new Hexagon(2, -1, -1)];
     static DIRECTIONS = [...Hexagon.NEIGHBOR_DIRECTIONS, ...Hexagon.DIAGONAL_DIRECTIONS];
     
