@@ -248,7 +248,7 @@ export class WorldMap {
     }
 
     get centerHexagon() {
-        return this.#centerHexagon || this.#calculateCenterHexagon();
+        return this.#centerHexagon ?? this.#calculateCenterHexagon();
     }
 
     get hexagons() {
