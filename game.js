@@ -19,8 +19,10 @@ export class Game {
     constructor(mainCanvas, window) {
         console.log('game');
 
+        const center = new Point(window.innerWidth, window.innerHeight);
+
         this.#zoom = 20;
-        this.#layout = new Layout(Orientation.FLAT, new Point(this.#zoom, this.#zoom), new Point(500, 500));
+        this.#layout = new Layout(Orientation.FLAT, new Point(this.#zoom, this.#zoom), center);
         this.#window = window;
         this.#mainCanvas = mainCanvas;
         this.#mainCanvasContext = mainCanvas.getContext('2d');
