@@ -108,7 +108,7 @@ export class WorldMap {
      * @returns 
      */
     #scaleFromZoom(initialSize) {
-        return Math.max(Math.max(1, Math.min(this.zoom -this.initialZoom + initialSize, 10)) / 2, 1);
+        return Math.max(Math.max(1, Math.min(this.zoom -this.#initialZoom + initialSize, 10)) / 2, 1);
     }
 
     /**
