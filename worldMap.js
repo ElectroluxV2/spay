@@ -4,6 +4,22 @@ import { Layout } from './layout.js';
 import { Orientation } from './orientation.js';
 
 export class WorldMap {
+    static #COLORS = {
+        1: '#7FDBFF',
+        2: '#0074D9',
+        3: '#001f3f',
+        4: '#39CCCC',
+        5: '#B10DC9',
+        6: '#F012BE',
+        7: '#85144b',
+        8: '#FF4136',
+        9: '#FF851B',
+        10: '#FFDC00',
+        11: '#3D9970',
+        12: '#2ECC40',
+        13: '#01FF70'
+    };
+
     #layout;
     #zoom;
     #initialZoom;
@@ -25,10 +41,8 @@ export class WorldMap {
         this.#hexagons.set(main.hashCode(), main);
 
         // this.#generatorV3(main, 5000, 5000, 2000);
-        this.#generatorV2(main, 30, 100);
+        this.#generatorV2(main, 300, 400);
         // this.#generatorV1(main);
-
-        console.log(this.#layout.hexToPixel(this.centerHexagon).multiply(0.5));
 
         this.#layout.origin = this.#layout.hexToPixel(this.centerHexagon).multiply(0.5);
 
@@ -65,6 +79,9 @@ export class WorldMap {
         const neighbor = current.neighbor(neighborIndex);
 
         this.#hexagons.set(neighbor.hashCode(), neighbor);
+
+        if (Math.random() > 0.5) this.#hexagonsColors.set(neighbor, this.#cryptoRandomRange(2, 13)); 
+    
 
         if ( --stepsLeft >= 0 && this.#hexagons.size < max) {
 
@@ -121,10 +138,26 @@ export class WorldMap {
 
     /**
      * 
+     * @param {Number} colorIndex
+     * @returns {String}
+     */
+    #getColorFromColorIndex(colorIndex) {
+        return WorldMap.#COLORS[colorIndex] ?? 'rebeccapurple';
+    }
+
+    /**
+     * 
      * @param {Hexagon} hexagon 
      */
     #drawHexagon(context, hexagon) {
         const corners = this.#layout.hexagonCorners(hexagon);
+
+        if (this.#hexagonsColors.has(hexagon)) {
+            context.fillStyle = this.#getColorFromColorIndex(this.#hexagonsColors.get(hexagon));
+        } else {
+            context.fillStyle = '#DDDDDD';
+        }
+        
 
         context.beginPath();
         context.moveTo(...corners[0]);
@@ -147,7 +180,6 @@ export class WorldMap {
         context.lineJoin = 'bevel';
         context.lineWidth = this.#scaleFromZoom(3);
         context.strokeStyle = '#111111';
-        context.fillStyle = '#DDDDDD';
 
         for (const hexagon of this.hexagons) {
             this.#drawHexagon(context, hexagon);
