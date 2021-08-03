@@ -10,6 +10,7 @@ export class Game {
     #mainCanvasContext;
     #window;
     #zoom;
+    #initialZoom;
     #selectedHexagon;
     #worldMap;
     #drag;
@@ -21,7 +22,7 @@ export class Game {
 
         const center = new Point(window.innerWidth, window.innerHeight);
 
-        this.#zoom = 20;
+        this.#zoom = this.#initialZoom = 20;
         this.#layout = new Layout(Orientation.FLAT, new Point(this.#zoom, this.#zoom), center);
         this.#window = window;
         this.#mainCanvas = mainCanvas;
@@ -74,6 +75,10 @@ export class Game {
         this.#layout.size.x = this.#layout.size.y = this.#zoom;
     }
 
+    scaleFromZoom(initialSize) {
+        return Math.max(Math.max(1, Math.min(this.#zoom - this.#initialZoom + initialSize, 10)) / 2, 1);
+    }
+
     /**
      * 
      * @param {Hexagon} hexagon 
@@ -93,10 +98,13 @@ export class Game {
     }
     
     loop() {
-        this.#mainCanvasContext.reset();
-        this.#mainCanvasContext.fillStyle = 'rebeccapurple';
-        this.#mainCanvasContext.fillRect(0, 0, this.#mainCanvas.width, this.#mainCanvasContext.height);
-        this.#mainCanvasContext.strokeStyle = 'red';
+        // this.#mainCanvasContext.reset();
+        this.#mainCanvasContext.fillStyle = 'black';
+        this.#mainCanvasContext.fillRect(0, 0, this.#mainCanvas.width, this.#mainCanvas.height);
+
+        this.#mainCanvasContext.lineJoin = 'bevel';
+        this.#mainCanvasContext.lineWidth = this.scaleFromZoom(3);
+        this.#mainCanvasContext.strokeStyle = 'gray';
 
         for (const hexagon of this.#worldMap.hexagons) {
             this.#drawHexagon(hexagon);
