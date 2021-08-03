@@ -1,7 +1,9 @@
 import { Hexagon } from './hexagon.js';
+import { Point } from './point.js';
 
 export class WorldMap {
     #hexagons;
+    #centerHexagon;
 
     constructor() {
         this.#hexagons = new Map();
@@ -9,7 +11,9 @@ export class WorldMap {
         const main = new Hexagon(0, 0, 0);
         this.#hexagons.set(main.hashCode(), main);
 
-        this.#generatorV3(main, 100000, 100000, 2000);
+        this.#generatorV3(main, 5000, 5000, 2000);
+        // this.#generatorV2(main, 30, 100);
+        // this.#generatorV1(main);
     }
 
     #generatorV1(current, depth = 0, maxDepth = 50) {
@@ -63,6 +67,32 @@ export class WorldMap {
 
             current = neighbor;
         }
+    }
+
+    /**
+     * Calculates center of map
+     * @returns {Hexagon}
+     */
+    #calculateCenterHexagon() {
+        const min = new Point(Number.MAX_SAFE_INTEGER, Number.MAX_SAFE_INTEGER);
+        const max = new Point(Number.MIN_SAFE_INTEGER, Number.MIN_SAFE_INTEGER);
+
+        for (const hexagon of this.hexagons) {
+
+            if (hexagon.q > max.x) max.x = hexagon.q;
+            if (hexagon.r > max.y) max.y = hexagon.r;
+
+            if (hexagon.q < min.x) min.x = hexagon.q;
+            if (hexagon.r < min.y) min.y = hexagon.r;
+        }
+
+        this.#centerHexagon = new Hexagon((max.x + min.x) / 2, (max.y + min.y) / 2);
+
+        return this.#centerHexagon;
+    }
+
+    get centerHexagon() {
+        return this.#centerHexagon || this.#calculateCenterHexagon();
     }
 
     get hexagons() {

@@ -105,6 +105,9 @@ export class Game {
         this.#mainCanvasContext.strokeStyle = 'lime';
         this.#selectedHexagon && this.#drawHexagon(this.#selectedHexagon);
 
+        this.#mainCanvasContext.strokeStyle = 'yellow';
+        this.#drawHexagon(this.#worldMap.centerHexagon);
+
         requestAnimationFrame(this.loop.bind(this));
     }
 }

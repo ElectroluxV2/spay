@@ -15,11 +15,11 @@ export class Hexagon extends Array {
      * @param {Number} r 
      * @param {Number} s 
      */
-    constructor(q, r, s) {
+    constructor(q, r, s = null) {
         super();
         this.q = q;
         this.r = r;
-        this.s = s;
+        this.s = s ?? -q - r;
     }
 
     /**
