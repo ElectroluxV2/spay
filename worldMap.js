@@ -21,6 +21,7 @@ export class WorldMap {
     };
 
     #layout;
+    #window;
     #zoom;
     #initialZoom;
     #hexagons;
@@ -31,8 +32,9 @@ export class WorldMap {
      * @param {Point} origin
      * @param {Number} initialZoom 
      */
-    constructor(origin, initialZoom) {
+    constructor(origin, initialZoom, window) {
         this.#layout = new Layout(Orientation.FLAT, new Point(initialZoom, initialZoom), origin);
+        this.#window = window;
         this.#hexagons = new Map();
         this.#hexagonsColors = new Map();
         this.#zoom = this.#initialZoom = initialZoom;
@@ -220,19 +222,38 @@ export class WorldMap {
         context.lineWidth = this.#scaleFromZoom(3);
         context.strokeStyle = '#111111';
 
-        for (const hexagon of this.hexagons) {
+        for (const hexagon of this.onScreenHexagons()) {
             this.#drawHexagonFill(context, hexagon);
         }
 
         context.lineCap = 'round';
 
-        for (const hexagon of this.hexagons) {
+        for (const hexagon of this.onScreenHexagons()) {
             this.#drawHexagonBordersColorOnly(context, hexagon);
         }
 
-        for (const hexagon of this.hexagons) {
+        for (const hexagon of this.onScreenHexagons()) {
             this.#drawHexagonBordersBlackOnly(context, hexagon);
         }        
+    }
+
+    /**
+     * @returns {Generator<Hexagon>}
+     */
+    *onScreenHexagons() {
+        // let i = 0;
+        for (const hexagon of this.hexagons) {
+            const centerOfHexagon = this.#layout.hexToPixel(hexagon);
+
+            if (centerOfHexagon.x < 0) continue;
+            if (centerOfHexagon.y < 0) continue;
+            
+            if (centerOfHexagon.x > this.#window.innerWidth) continue;
+            if (centerOfHexagon.y > this.#window.innerHeight) continue;
+
+            // if (++i % 2 === 0) continue;
+            yield hexagon;
+        }
     }
 
     get zoom() {

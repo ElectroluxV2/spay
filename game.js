@@ -30,7 +30,7 @@ export class Game {
 
 
         const center = new Point(this.#window.innerWidth, this.#window.innerHeight);
-        this.#worldMap = new WorldMap(center, 20);
+        this.#worldMap = new WorldMap(center, 20, window);
 
        
         this.loop();
