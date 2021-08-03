@@ -43,7 +43,8 @@ export class WorldMap {
         this.#hexagons.set(main.hashCode(), main);
         this.#hexagonsColors.set(main.hashCode(), 9); 
 
-        this.#generatorV3(main, 5000, 5000, 2000);
+        this.#generatorV4(main, 5000, 5000, true, false);
+        // this.#generatorV3(main, 5000, 5000, 2000);
         // this.#generatorV2(main, 30, 50);
         // this.#generatorV1(main);
 
@@ -105,6 +106,33 @@ export class WorldMap {
             this.#hexagons.set(neighbor.hashCode(), neighbor);
 
             current = neighbor;
+        }
+    }
+
+    /**
+     * 
+     * @param {Hexagon} current 
+     * @param {Number} max 
+     * @param {Number} min 
+     */
+    #generatorV4(current, min = 10, max = min, lessLakes = true, allowIslands = false) {
+
+        const generateNext = current => current.neighbor(this.#cryptoRandomRange(0, allowIslands ? 11 : 5));
+        const addNext = generated => {
+            this.#hexagons.set(generated.hashCode(), generated);
+            Math.random() > 0.5 && this.#hexagonsColors.set(generated.hashCode(), this.#cryptoRandomRange(2, 13)); 
+
+            return generated;
+        };
+
+        while (this.#hexagons.size < min && this.#hexagons.size < max) {
+
+            let step = 0;
+            while (lessLakes && this.#hexagons.size < max && step++ < 5) {
+                addNext(generateNext(current));
+            }
+
+            current = addNext(generateNext(current, true));
         }
     }
 
