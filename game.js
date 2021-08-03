@@ -95,22 +95,25 @@ export class Game {
 
         this.#mainCanvasContext.closePath();
         this.#mainCanvasContext.stroke();
+        this.#mainCanvasContext.fill();
     }
     
     loop() {
         // this.#mainCanvasContext.reset();
-        this.#mainCanvasContext.fillStyle = 'black';
+        this.#mainCanvasContext.fillStyle = '#7FDBFF';
         this.#mainCanvasContext.fillRect(0, 0, this.#mainCanvas.width, this.#mainCanvas.height);
 
         this.#mainCanvasContext.lineJoin = 'bevel';
         this.#mainCanvasContext.lineWidth = this.scaleFromZoom(3);
-        this.#mainCanvasContext.strokeStyle = 'gray';
+        this.#mainCanvasContext.strokeStyle = '#111111';
+        this.#mainCanvasContext.fillStyle = '#DDDDDD';
 
         for (const hexagon of this.#worldMap.hexagons) {
             this.#drawHexagon(hexagon);
         }
     
-        this.#mainCanvasContext.strokeStyle = 'lime';
+        this.#mainCanvasContext.fillStyle = '#00000010';
+        this.#mainCanvasContext.strokeStyle = '#00000010';
         this.#selectedHexagon && this.#drawHexagon(this.#selectedHexagon);
 
         this.#mainCanvasContext.strokeStyle = 'yellow';
