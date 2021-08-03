@@ -34,7 +34,7 @@ export class WorldMap {
     constructor(origin, initialZoom) {
         this.#layout = new Layout(Orientation.FLAT, new Point(initialZoom, initialZoom), origin);
         this.#hexagons = new Map();
-        this.#hexagonsColors = new WeakMap();
+        this.#hexagonsColors = new Map();
         this.#zoom = this.#initialZoom = initialZoom;
 
         const main = new Hexagon(0, 0, 0);
@@ -80,7 +80,7 @@ export class WorldMap {
 
         this.#hexagons.set(neighbor.hashCode(), neighbor);
 
-        if (Math.random() > 0.5) this.#hexagonsColors.set(neighbor, this.#cryptoRandomRange(2, 13)); 
+        if (Math.random() > 0.5) this.#hexagonsColors.set(neighbor.hashCode(), this.#cryptoRandomRange(2, 13)); 
     
 
         if ( --stepsLeft >= 0 && this.#hexagons.size < max) {
@@ -152,8 +152,8 @@ export class WorldMap {
     #drawHexagon(context, hexagon) {
         const corners = this.#layout.hexagonCorners(hexagon);
 
-        if (this.#hexagonsColors.has(hexagon)) {
-            context.fillStyle = this.#getColorFromColorIndex(this.#hexagonsColors.get(hexagon));
+        if (this.#hexagonsColors.has(hexagon.hashCode())) {
+            context.fillStyle = this.#getColorFromColorIndex(this.#hexagonsColors.get(hexagon.hashCode()));
         } else {
             context.fillStyle = '#DDDDDD';
         }
