@@ -23,8 +23,8 @@ const workerContext = {
     onPointerMove: ({pageX, pageY}) => {
         workerContext.game?.onPointerMove(pageX, pageY);
     },
-    onPointerDown: () => workerContext.game?.onPointerDown(),
-    onPointerUp: () => workerContext.game?.onPointerUp(),
+    onPointerDown: ({pageX, pageY}) => workerContext.game?.onPointerDown(pageX, pageY),
+    onPointerUp: ({pageX, pageY}) => workerContext.game?.onPointerUp(pageX, pageY),
     onWheel: ({deltaX, deltaY}) => {
         workerContext.game?.onWheel(deltaX, deltaY);
     }

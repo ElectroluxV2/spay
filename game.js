@@ -13,6 +13,7 @@ export class Game {
     #selectedHexagon;
     #worldMap;
     #drag;
+    #dragStart;
     keyboardStates;
 
     constructor(mainCanvas, window) {
@@ -30,11 +31,12 @@ export class Game {
         this.loop();
     }
 
-    onPointerDown() {
+    onPointerDown(pageX, pageY) {
+        this.#dragStart = new Point(pageX, pageY);
         this.#drag = true;
     }
 
-    onPointerUp() {
+    onPointerUp(pageX, pageY) {
         this.#drag = false;
     }
 
@@ -42,14 +44,23 @@ export class Game {
      * @param {PointerEvent} PointerEvent 
      */
     onPointerMove(pageX, pageY) {
+        const pointer = new Point(pageX, pageY);
+
 
         if (this.#drag) {
-            this.#layout.origin.x = this.#layout.origin.x + (pageX - this.#layout.origin.x);
-            this.#layout.origin.y = this.#layout.origin.y + (pageY - this.#layout.origin.y);
+            const dx = this.#dragStart.x - pointer.x;
+            const dy = this.#dragStart.y - pointer.y;
+
+            this.#layout.origin.x -= dx;
+            this.#layout.origin.y -= dy;
+
+            this.#dragStart.x -= dx;
+            this.#dragStart.y -= dy;
+
             return;
         }
 
-        const point = new Point(pageX, pageY);
+        const point = pointer;
         this.#selectedHexagon = this.#layout.pixelToHex(point);
     }
 

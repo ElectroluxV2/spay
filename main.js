@@ -44,12 +44,16 @@ window.onpointermove = ({pageX, pageY}) => mainWorker.postMessage({
     pageY: pageY
 });
 
-window.onpointerdown = () => mainWorker.postMessage({
-    function: 'onPointerDown'
+window.onpointerdown = ({pageX, pageY}) => mainWorker.postMessage({
+    function: 'onPointerDown',
+    pageX: pageX,
+    pageY: pageY
 });
 
-window.onpointerup = () => mainWorker.postMessage({
-    function: 'onPointerUp'
+window.onpointerup = ({pageX, pageY}) => mainWorker.postMessage({
+    function: 'onPointerUp',
+    pageX: pageX,
+    pageY: pageY
 });
 
 window.onwheel = ({deltaX, deltaY}) => mainWorker.postMessage({
