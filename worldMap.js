@@ -241,17 +241,15 @@ export class WorldMap {
      * @returns {Generator<Hexagon>}
      */
     *onScreenHexagons() {
-        // let i = 0;
         for (const hexagon of this.hexagons) {
             const centerOfHexagon = this.#layout.hexToPixel(hexagon);
 
-            if (centerOfHexagon.x < 0) continue;
-            if (centerOfHexagon.y < 0) continue;
+            if (centerOfHexagon.x + this.#layout.size.x < 0) continue;
+            if (centerOfHexagon.y + this.#layout.size.y < 0) continue;
             
-            if (centerOfHexagon.x > this.#window.innerWidth) continue;
-            if (centerOfHexagon.y > this.#window.innerHeight) continue;
+            if (centerOfHexagon.x - this.#layout.size.x > this.#window.innerWidth) continue;
+            if (centerOfHexagon.y - this.#layout.size.y > this.#window.innerHeight) continue;
 
-            // if (++i % 2 === 0) continue;
             yield hexagon;
         }
     }
