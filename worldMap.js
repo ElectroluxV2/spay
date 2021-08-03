@@ -1,12 +1,23 @@
 import { Hexagon } from './hexagon.js';
 import { Point } from './point.js';
+import { Layout } from './layout.js';
+import { Orientation } from './orientation.js';
 
 export class WorldMap {
+    #layout;
+    #zoom;
+    #initialZoom;
     #hexagons;
     #centerHexagon;
 
-    constructor() {
+    /**
+     * @param {Point} origin
+     * @param {Number} initialZoom 
+     */
+    constructor(origin, initialZoom) {
+        this.#layout = new Layout(Orientation.FLAT, new Point(initialZoom, initialZoom), origin);
         this.#hexagons = new Map();
+        this.#zoom = this.#initialZoom = initialZoom;
 
         const main = new Hexagon(0, 0, 0);
         this.#hexagons.set(main.hashCode(), main);
@@ -89,6 +100,54 @@ export class WorldMap {
         this.#centerHexagon = new Hexagon((max.x + min.x) / 2, (max.y + min.y) / 2);
 
         return this.#centerHexagon;
+    }
+
+    /**
+     * 
+     * @param {Number} initialSize 
+     * @returns 
+     */
+    #scaleFromZoom(initialSize) {
+        return Math.max(Math.max(1, Math.min(this.zoom -this.initialZoom + initialSize, 10)) / 2, 1);
+    }
+
+    /**
+     * 
+     * @param {Hexagon} hexagon 
+     */
+    #drawHexagon(context, hexagon) {
+        const corners = this.#layout.hexagonCorners(hexagon);
+
+        context.beginPath();
+        context.moveTo(...corners[0]);
+
+        for (let i = 1; i < corners.length; i++) {
+            context.lineTo(...corners[i]);
+        }
+
+        context.closePath();
+        context.stroke();
+        context.fill();
+    }
+
+    /**
+     * Draws map onto canvas
+     * @param {OffscreenCanvas} canvas 
+     * @param {OffscreenCanvasRenderingContext2D} context 
+     */
+    draw(canvas, context) {
+        context.lineJoin = 'bevel';
+        context.lineWidth = this.#scaleFromZoom(3);
+        context.strokeStyle = '#111111';
+        context.fillStyle = '#DDDDDD';
+
+        for (const hexagon of this.hexagons) {
+            this.#drawHexagon(context, hexagon);
+        }
+    }
+
+    get layout() {
+        return this.#layout;
     }
 
     get centerHexagon() {
