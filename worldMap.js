@@ -8,6 +8,7 @@ export class WorldMap {
     #zoom;
     #initialZoom;
     #hexagons;
+    #hexagonsColors;
     #centerHexagon;
 
     /**
@@ -17,14 +18,21 @@ export class WorldMap {
     constructor(origin, initialZoom) {
         this.#layout = new Layout(Orientation.FLAT, new Point(initialZoom, initialZoom), origin);
         this.#hexagons = new Map();
+        this.#hexagonsColors = new WeakMap();
         this.#zoom = this.#initialZoom = initialZoom;
 
         const main = new Hexagon(0, 0, 0);
         this.#hexagons.set(main.hashCode(), main);
 
-        this.#generatorV3(main, 5000, 5000, 2000);
-        // this.#generatorV2(main, 30, 100);
+        // this.#generatorV3(main, 5000, 5000, 2000);
+        this.#generatorV2(main, 30, 100);
         // this.#generatorV1(main);
+
+        console.log(this.#layout.hexToPixel(this.centerHexagon).multiply(0.5));
+
+        this.#layout.origin = this.#layout.hexToPixel(this.centerHexagon).multiply(0.5);
+
+        console.log();
     }
 
     #generatorV1(current, depth = 0, maxDepth = 50) {

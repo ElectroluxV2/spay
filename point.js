@@ -60,6 +60,10 @@ export class Point extends Array {
         return Point.equals(this, other);
     }
 
+    multiply(scalar) {
+        return new Point(this.x * scalar, this.y * scalar);
+    }
+
     set x(value) {
         this[0] = value;
     }
