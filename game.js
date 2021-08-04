@@ -6,6 +6,7 @@ export class Game {
     #mainCanvasContext;
     #window;
     #animationFrameId;
+    #thresholdFrameUpdateTimer;
 
     #worldMap;
     #selectedHexagon;
@@ -42,12 +43,23 @@ export class Game {
         this.#animationFrameId = requestAnimationFrame(this.#startFrameUpdate.bind(this));
     }
 
+    #isFrameUpdateStarted() {
+        return this.#animationFrameId !== undefined;
+    }
+
     #singleFrameUpdate() {
         this.#drawSingleFrame();
     }
 
+    #thresholdFrameUpdate(timeToStop = 200) {
+        !this.#isFrameUpdateStarted() && this.#startFrameUpdate();
+        clearTimeout(this.#thresholdFrameUpdateTimer);
+        this.#thresholdFrameUpdateTimer = setTimeout(this.#stopFrameUpdate.bind(this), timeToStop);
+    }
+
     #stopFrameUpdate() {
         cancelAnimationFrame(this.#animationFrameId);
+        this.#animationFrameId = undefined;
     }
 
     /**
@@ -59,7 +71,7 @@ export class Game {
         this.#dragStart = new Point(pageX, pageY);
         this.#drag = true;
 
-        this.#startFrameUpdate();
+        !this.#isFrameUpdateStarted() && this.#startFrameUpdate();
     }
 
     /**
@@ -105,6 +117,8 @@ export class Game {
     onWheel(deltaX, deltaY) {
         this.#worldMap.zoom -= Math.sign(deltaY);
         this.#worldMap.layout.size.x = this.#worldMap.layout.size.y = this.#worldMap.zoom;
+
+        this.#thresholdFrameUpdate();
     }
 
     #drawSingleFrame() {
