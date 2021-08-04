@@ -5,6 +5,7 @@ export class Game {
     #mainCanvas;
     #mainCanvasContext;
     #window;
+    #animationFrameId;
 
     #worldMap;
     #selectedHexagon;
@@ -33,7 +34,20 @@ export class Game {
         this.#worldMap = new WorldMap(center, 20, window);
 
        
-        this.loop();
+        this.#singleFrameUpdate();
+    }
+
+    #startFrameUpdate() {
+        this.#drawSingleFrame();
+        this.#animationFrameId = requestAnimationFrame(this.#startFrameUpdate.bind(this));
+    }
+
+    #singleFrameUpdate() {
+        this.#drawSingleFrame();
+    }
+
+    #stopFrameUpdate() {
+        cancelAnimationFrame(this.#animationFrameId);
     }
 
     /**
@@ -44,6 +58,8 @@ export class Game {
     onPointerDown(pageX, pageY) {
         this.#dragStart = new Point(pageX, pageY);
         this.#drag = true;
+
+        this.#startFrameUpdate();
     }
 
     /**
@@ -53,6 +69,8 @@ export class Game {
      */
     onPointerUp(pageX, pageY) {
         this.#drag = false;
+
+        this.#stopFrameUpdate();
     }
 
     /**
@@ -87,6 +105,13 @@ export class Game {
     onWheel(deltaX, deltaY) {
         this.#worldMap.zoom -= Math.sign(deltaY);
         this.#worldMap.layout.size.x = this.#worldMap.layout.size.y = this.#worldMap.zoom;
+    }
+
+    #drawSingleFrame() {
+        this.#mainCanvasContext.fillStyle = '#7FDBFF';
+        this.#mainCanvasContext.fillRect(0, 0, this.#mainCanvas.width, this.#mainCanvas.height);
+
+        this.#worldMap.draw(this.#mainCanvasContext, this.#mainCanvasContext);
     }
 
     
