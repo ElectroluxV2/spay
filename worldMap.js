@@ -7,13 +7,13 @@ export class WorldMap {
     static #MAX_ZOOM = 80;
     static #MIN_ZOOM = 1;
     static #COLORS = [
-        '#7FDBFF',
-        '#0074D9',
         '#001f3f',
+        '#0074D9',
+        '#7FDBFF',
         '#39CCCC',
+        '#85144b',
         '#B10DC9',
         '#F012BE',
-        '#85144b',
         '#FF4136',
         '#FF851B',
         '#FFDC00',
