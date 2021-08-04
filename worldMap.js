@@ -6,21 +6,21 @@ import { Orientation } from './orientation.js';
 export class WorldMap {
     static #MAX_ZOOM = 80;
     static #MIN_ZOOM = 1;
-    static #COLORS = {
-        1: '#7FDBFF',
-        2: '#0074D9',
-        3: '#001f3f',
-        4: '#39CCCC',
-        5: '#B10DC9',
-        6: '#F012BE',
-        7: '#85144b',
-        8: '#FF4136',
-        9: '#FF851B',
-        10: '#FFDC00',
-        11: '#3D9970',
-        12: '#2ECC40',
-        13: '#01FF70'
-    };
+    static #COLORS = [
+        '#7FDBFF',
+        '#0074D9',
+        '#001f3f',
+        '#39CCCC',
+        '#B10DC9',
+        '#F012BE',
+        '#85144b',
+        '#FF4136',
+        '#FF851B',
+        '#FFDC00',
+        '#3D9970',
+        '#2ECC40',
+        '#01FF70'
+    ];
 
     #layout;
     #window;
