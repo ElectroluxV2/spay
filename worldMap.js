@@ -120,7 +120,7 @@ export class WorldMap {
         const generateNext = current => current.neighbor(this.#cryptoRandomRange(0, allowIslands ? 11 : 5));
         const addNext = generated => {
             this.#hexagons.set(generated.hashCode(), generated);
-            Math.random() > 0.5 && this.#hexagonsColors.set(generated.hashCode(), this.#cryptoRandomRange(2, 13)); 
+            Math.random() > 0.5 && this.#hexagonsColors.set(generated.hashCode(), this.#cryptoRandomRange(1, 13)); 
 
             return generated;
         };

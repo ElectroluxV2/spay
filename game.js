@@ -9,6 +9,7 @@ export class Game {
     #thresholdFrameUpdateTimer;
 
     #worldMap;
+    #waterPattern;
     #selectedHexagon;
 
     #drag;
@@ -30,12 +31,17 @@ export class Game {
         this.#drag = false;
         this.keyboardStates = new Map();
 
+        this.#loadLevel().then(this.#singleFrameUpdate.bind(this));
+    }
 
+    async #loadLevel() {
         const center = new Point(this.#window.innerWidth, this.#window.innerHeight);
-        this.#worldMap = new WorldMap(center, 20, window);
+        this.#worldMap = new WorldMap(center, 20, this.#window);
 
-       
-        this.#singleFrameUpdate();
+        const result = await fetch('./background_water.png');
+        const blob = await result.blob();
+        const image = await createImageBitmap(blob);
+        this.#waterPattern = this.#mainCanvasContext.createPattern(image, 'repeat');
     }
 
     #startFrameUpdate() {
@@ -122,7 +128,8 @@ export class Game {
     }
 
     #drawSingleFrame() {
-        this.#mainCanvasContext.fillStyle = '#7FDBFF';
+        // this.#mainCanvasContext.fillStyle = '#7FDBFF';
+        this.#mainCanvasContext.fillStyle = this.#waterPattern;
         this.#mainCanvasContext.fillRect(0, 0, this.#mainCanvas.width, this.#mainCanvas.height);
 
         this.#worldMap.draw(this.#mainCanvasContext, this.#mainCanvasContext);
