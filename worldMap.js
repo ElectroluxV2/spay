@@ -4,6 +4,8 @@ import { Layout } from './layout.js';
 import { Orientation } from './orientation.js';
 
 export class WorldMap {
+    static #MAX_ZOOM = 80;
+    static #MIN_ZOOM = 1;
     static #COLORS = {
         1: '#7FDBFF',
         2: '#0074D9',
@@ -287,7 +289,7 @@ export class WorldMap {
     }
 
     set zoom(value) {
-        this.#zoom = value;
+        this.#zoom = value < WorldMap.#MIN_ZOOM ? WorldMap.#MIN_ZOOM : value > WorldMap.#MAX_ZOOM ? WorldMap.#MAX_ZOOM : value;
     }
 
     get layout() {
