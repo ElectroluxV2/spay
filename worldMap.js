@@ -71,10 +71,8 @@ export class WorldMap {
 
         this.#generatorV4(main, 5000, 5000, true, false);
 
-        // TODO: Fix this, map is not always in center
+        // TODO: FIXME: Map is not always in center
         this.#layout.origin = this.#layout.hexToPixel(this.centerHexagon).multiply(0.5);
-
-        console.log();
     }
 
     #cryptoRandomRange(min, max) {
