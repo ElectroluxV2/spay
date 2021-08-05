@@ -70,9 +70,6 @@ export class WorldMap {
         this.#hexagonsColors.set(main.hashCode(), 9); 
 
         this.#generatorV4(main, 5000, 5000, true, false);
-        // this.#generatorV3(main, 5000, 5000, 2000);
-        // this.#generatorV2(main, 30, 50);
-        // this.#generatorV1(main);
 
         this.#layout.origin = this.#layout.hexToPixel(this.centerHexagon).multiply(0.5);
 
