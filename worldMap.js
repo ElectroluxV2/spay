@@ -53,6 +53,9 @@ export class WorldMap {
     #preRenderedHexagons;
     #centerHexagon;
 
+    currentPercentProgress = 0.0;
+    currentTask = 'None';
+
     /**
      * @param {Point} origin
      */
@@ -66,18 +69,6 @@ export class WorldMap {
         this.#window = window;
         this.#hexagons = new Map();
         this.#hexagonsColors = new Map();
-
-
-        const main = new Hexagon(0, 0, 0);
-        this.#hexagons.set(main.hashCode(), main);
-        this.#hexagonsColors.set(main.hashCode(), 0); 
-
-        console.time('MapGenerationTook');
-        this.#generatorV4(main, 5000, 5000, true, false);
-        console.timeEnd('MapGenerationTook');
-
-        // TODO: FIXME: Map is not always in center
-        this.#layout.origin = this.#layout.hexToPixel(this.centerHexagon).multiply(0.5);
     }
 
     getPreRenderedHexagon(deletedBorderIndexes, colorIndex, zoomIndex) {
@@ -88,8 +79,20 @@ export class WorldMap {
         this.#preRenderedHexagons.get(deletedBorderIndexes).get(colorIndex).set(zoomIndex, preRenderedHexagon);
     }
 
-    async prerender() {
-        console.info(`Pre-rendering hexagon textures.`);
+    async *generate() {
+        const main = new Hexagon(0, 0, 0);
+        this.#hexagons.set(main.hashCode(), main);
+        this.#hexagonsColors.set(main.hashCode(), 0);
+
+        yield* this.#generatorV4(main, 15000, 15000, true, false);
+
+        // TODO: FIXME: Map is not always in center
+        this.#layout.origin = this.#layout.hexToPixel(this.centerHexagon).multiply(0.5);
+    }
+
+    async *prerender() {
+        this.currentTask = 'Pre-rendering hexagon textures.';
+        console.info(this.currentTask);
         console.time('PreRenderTook');
        
         // Generate all possible variants of hexagon
@@ -139,7 +142,8 @@ export class WorldMap {
                     const preRenderedHexagon = new PreRenderedHexagon(size, color, deletedBorderIndexes);
                     await this.prerenderSingleHexagon(preRenderedHexagon);
                     this.setPreRenderedHexagon(deletedBorderIndexes, colorIndex, zoomIndex, preRenderedHexagon);
-                    console.info(`Pre-rendering hexagon textures ${++progress} / ${total}.`);
+                    progress++;
+                    yield {p: progress, t: total};
                 }
             }
         }
@@ -216,23 +220,18 @@ export class WorldMap {
      * @param {Number} max 
      * @param {Number} min 
      */
-    #generatorV4(current, min = 10, max = min, lessLakes = true, allowIslands = false) {
+    *#generatorV4(current, min = 10, max = min, lessLakes = true, allowIslands = false) {
+        this.currentTask = 'Generating map.';
+        console.info(this.currentTask);
+        console.time('MapGenerationTook');
 
         let progress = 0;
         const generateNext = current => current.neighbor(this.#cryptoRandomRange(0, allowIslands ? 11 : 5));
         const addNext = generated => {
             this.#hexagons.set(generated.hashCode(), generated);
             this.#hexagonsColors.set(generated.hashCode(), this.#cryptoRandomRange(0, WorldMap.#COLORS.length - 1)); 
-
-            if (progress !== this.#hexagons.size) {
-                progress = this.#hexagons.size;
-                console.info(`Generating map ${progress} / ${min} (${max}).`)
-            }
-
             return generated;
         };
-
-        
 
         while (this.#hexagons.size < min && this.#hexagons.size < max) {
 
@@ -242,7 +241,14 @@ export class WorldMap {
             }
 
             current = addNext(generateNext(current, true));
+
+            if (progress !== this.#hexagons.size) {
+                progress = this.#hexagons.size;
+                yield {p: progress, t: min};
+            }
         }
+
+        console.timeEnd('MapGenerationTook');
     }
 
     /**

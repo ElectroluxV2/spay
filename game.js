@@ -1,4 +1,5 @@
 import { Point } from './point.js';
+import { ProgressBar } from './progressBar.js';
 import { WorldMap } from './worldMap.js';
 
 export class Game {
@@ -35,15 +36,47 @@ export class Game {
     }
 
     async #loadLevel() {
+        const progressBar = new ProgressBar({x: (this.#window.innerWidth / 2) - (this.#window.innerWidth / 3 / 2), y: (this.#window.innerHeight / 2), width: this.#window.innerWidth / 3, height: 64}, '#989fce', 0);
         const center = new Point(this.#window.innerWidth, this.#window.innerHeight);
+
         this.#worldMap = new WorldMap(center, this.#window);
+
+        let lastProgress = 0;
+        const updateProgress = async (progress, text) => {
+            if (Math.trunc((progress * 100)) <= lastProgress) return;
+
+            this.#mainCanvasContext.fillStyle = '#272838';
+            this.#mainCanvasContext.fillRect(0, 0, ...center);
+            progressBar.draw(this.#mainCanvasContext, progress);
+            
+            const textSize = this.#mainCanvasContext.measureText(text);
+            this.#mainCanvasContext.fillStyle = '#7D6B91';
+            this.#mainCanvasContext.font = 'bold 16px Arial';
+            this.#mainCanvasContext.fillText(text,  (this.#window.innerWidth / 2) - (textSize.width / 2), (this.#window.innerHeight / 2) + 80 + textSize.actualBoundingBoxDescent);
+
+            lastProgress = Math.trunc((progress * 100));
+
+            await new Promise(resolve => {
+                setTimeout(resolve, 0)
+            });
+        }
+
+        updateProgress(0);
 
         const result = await fetch('./background_water.png');
         const blob = await result.blob();
         const image = await createImageBitmap(blob);
         this.#waterPattern = this.#mainCanvasContext.createPattern(image, 'repeat');
 
-        await this.#worldMap.prerender();
+        for await (const {p, t} of this.#worldMap.prerender()) {
+            await updateProgress(p / t, `[1 of 2] Pre-rendering hexagon textures. ${p} / ${t}`);
+        }
+
+        lastProgress = 0;
+
+        for await (const {p, t} of this.#worldMap.generate()) {
+            await updateProgress(p / t, `[2 of 2] Generating map. ${p} / ${t}`);
+        }
     }
 
     #startFrameUpdate() {
