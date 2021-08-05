@@ -4,8 +4,28 @@ import { Layout } from './layout.js';
 import { Orientation } from './orientation.js';
 
 export class WorldMap {
-    static #MAX_ZOOM = 80;
-    static #MIN_ZOOM = 1;
+    static #ZOOM_STAGES = [
+        1.5,
+        2,
+        3,
+        4,
+        5.5,
+        7,
+        8.5,
+        10,
+        12,
+        14,
+        16,
+        20,
+        24,
+        30,
+        40,
+        50
+    ];
+
+    static #MAX_ZOOM = WorldMap.#ZOOM_STAGES.length - 1;
+    static #MIN_ZOOM = 0;
+    
     static #COLORS = [
         '#001f3f',
         '#0074D9',
@@ -24,7 +44,7 @@ export class WorldMap {
 
     #layout;
     #window;
-    #zoom;
+    #zoomIndex;
     #initialZoom;
     #hexagons;
     #hexagonsColors;
@@ -32,14 +52,18 @@ export class WorldMap {
 
     /**
      * @param {Point} origin
-     * @param {Number} initialZoom 
      */
-    constructor(origin, initialZoom, window) {
-        this.#layout = new Layout(Orientation.FLAT, new Point(initialZoom, initialZoom), origin);
+    constructor(origin, window) {
+        const middleZoomIndex = Math.trunc(WorldMap.#MAX_ZOOM / 2);
+        this.#zoomIndex = middleZoomIndex;
+        this.#initialZoom = WorldMap.#ZOOM_STAGES[middleZoomIndex];
+
+
+        this.#layout = new Layout(Orientation.FLAT, new Point(this.#initialZoom, this.#initialZoom), origin);
         this.#window = window;
         this.#hexagons = new Map();
         this.#hexagonsColors = new Map();
-        this.#zoom = this.#initialZoom = initialZoom;
+
 
         const main = new Hexagon(0, 0, 0);
         this.#hexagons.set(main.hashCode(), main);
@@ -285,11 +309,17 @@ export class WorldMap {
     }
 
     get zoom() {
-        return this.#zoom;
+        return WorldMap.#ZOOM_STAGES[this.#zoomIndex];
     }
 
-    set zoom(value) {
-        this.#zoom = value < WorldMap.#MIN_ZOOM ? WorldMap.#MIN_ZOOM : value > WorldMap.#MAX_ZOOM ? WorldMap.#MAX_ZOOM : value;
+    zoomIn() {
+        ++this.#zoomIndex > WorldMap.#MAX_ZOOM && (this.#zoomIndex = WorldMap.#MAX_ZOOM);
+        // (++this.#zoomIndex) %= WorldMap.#MAX_ZOOM;
+    }
+
+    zoomOut() {
+        --this.#zoomIndex < WorldMap.#MIN_ZOOM && (this.#zoomIndex = WorldMap.#MIN_ZOOM);
+        // WorldMap.#MAX_ZOOM += ((--this.#zoomIndex) %= WorldMap.#MAX_ZOOM);
     }
 
     get layout() {

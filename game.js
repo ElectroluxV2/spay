@@ -36,7 +36,7 @@ export class Game {
 
     async #loadLevel() {
         const center = new Point(this.#window.innerWidth, this.#window.innerHeight);
-        this.#worldMap = new WorldMap(center, 20, this.#window);
+        this.#worldMap = new WorldMap(center, this.#window);
 
         const result = await fetch('./background_water.png');
         const blob = await result.blob();
@@ -121,7 +121,7 @@ export class Game {
      * @param {WheelEvent} WheelEvent 
      */
     onWheel(deltaX, deltaY) {
-        this.#worldMap.zoom -= Math.sign(deltaY);
+        Math.sign(deltaY) > 0 ? this.#worldMap.zoomOut() : this.#worldMap.zoomIn();
         this.#worldMap.layout.size.x = this.#worldMap.layout.size.y = this.#worldMap.zoom;
 
         this.#thresholdFrameUpdate();
