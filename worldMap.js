@@ -2,6 +2,7 @@ import { Hexagon } from './hexagon.js';
 import { Point } from './point.js';
 import { Layout } from './layout.js';
 import { Orientation } from './orientation.js';
+import { PreRenderedHexagon } from './preRenderedHexagon.js';
 
 export class WorldMap {
     static #ZOOM_STAGES = [
@@ -27,6 +28,7 @@ export class WorldMap {
     static #MIN_ZOOM = 0;
     
     static #COLORS = [
+        '#DDDDDD',
         '#001f3f',
         '#0074D9',
         '#7FDBFF',
@@ -48,6 +50,7 @@ export class WorldMap {
     #initialZoom;
     #hexagons;
     #hexagonsColors;
+    #preRenderedHexagons;
     #centerHexagon;
 
     /**
@@ -73,6 +76,91 @@ export class WorldMap {
 
         // TODO: FIXME: Map is not always in center
         this.#layout.origin = this.#layout.hexToPixel(this.centerHexagon).multiply(0.5);
+
+        this.#preRenderedHexagons = new Map();
+
+        for (let colorIndex = 0; colorIndex < WorldMap.#COLORS.length; colorIndex++) {
+            this.#preRenderedHexagons.set(colorIndex, new Map());
+        }
+    }
+
+    getPreRenderedHexagon(colorIndex, zoomIndex) {
+        return this.#preRenderedHexagons.get(colorIndex).get(zoomIndex);
+    }
+
+    setPreRenderedHexagon(colorIndex, zoomIndex, preRenderedHexagon) {
+        this.#preRenderedHexagons.get(colorIndex).set(zoomIndex, preRenderedHexagon);
+    }
+
+    async prerender() {
+        // TODO: FIXME: Missing border blend variants
+        for (let colorIndex = 0; colorIndex < WorldMap.#COLORS.length; colorIndex++) {
+            const color = WorldMap.#COLORS[colorIndex];
+
+            for (let zoomIndex = 0; zoomIndex <= WorldMap.#MAX_ZOOM; zoomIndex++) {
+                const size = new Point(WorldMap.#ZOOM_STAGES[zoomIndex], WorldMap.#ZOOM_STAGES[zoomIndex]);
+    
+                const preRenderedHexagon = new PreRenderedHexagon(size, color, []);
+                await this.prerenderSingleHexagon(preRenderedHexagon);
+                this.setPreRenderedHexagon(colorIndex, zoomIndex, preRenderedHexagon);
+            }
+        }
+        
+    }
+
+    /**
+     * 
+     * @param {PreRenderedHexagon} preRenderedHexagon 
+     */
+    async prerenderSingleHexagon(preRenderedHexagon) {
+        const context = preRenderedHexagon.getContext('2d');
+        this.#drawHexagon(context, new Hexagon(0, 0), new Layout(Orientation.FLAT, preRenderedHexagon.size, preRenderedHexagon.size), preRenderedHexagon.deletedBorderIndexes, preRenderedHexagon.color);
+   
+        // const blob = await preRenderedHexagon.convertToBlob({
+        //     type: 'image/png',
+        // });
+
+        // const url = new FileReaderSync().readAsDataURL(blob);
+
+        // console.log(url);
+    }
+
+    /**
+     * @param {OffscreenCanvasRenderingContext2D} context
+     * @param {Hexagon} hexagon
+     * @param {Layout} layout
+     * @param {String} color
+     * @param {Number[]} removeBorderIndexes
+     */
+     #drawHexagon(context, hexagon, layout, removeBorderIndexes, color) {
+        const corners = layout.hexagonCorners(hexagon);
+        const fillPath = layout.hexagonFillPath2D(hexagon, corners);
+
+        // Fill
+        context.fillStyle = color;
+        context.fill(fillPath);
+
+        // Color borders
+        context.strokeStyle = color;
+        for (let directionIndex = 0; directionIndex < 6; directionIndex++){
+            
+            // Check if color (directionIndex is NOT included in removeBorderIndexes)
+            if (!removeBorderIndexes.includes(directionIndex)) continue;
+
+            const border = this.#layout.hexagonBorderPartPath2D(hexagon, directionIndex, corners);
+            context.stroke(border);
+        }
+
+        // Black borders
+        context.strokeStyle = '#111111';
+        for (let directionIndex = 0; directionIndex < 6; directionIndex++){
+            
+            // Check if color (directionIndex is included in removeBorderIndexes)
+            if (removeBorderIndexes.includes(directionIndex)) continue;
+
+            const border = this.#layout.hexagonBorderPartPath2D(hexagon, directionIndex, corners);
+            context.stroke(border);
+        }
     }
 
     #cryptoRandomRange(min, max) {
@@ -99,7 +187,7 @@ export class WorldMap {
         const generateNext = current => current.neighbor(this.#cryptoRandomRange(0, allowIslands ? 11 : 5));
         const addNext = generated => {
             this.#hexagons.set(generated.hashCode(), generated);
-            Math.random() > 0.5 && this.#hexagonsColors.set(generated.hashCode(), this.#cryptoRandomRange(1, 13)); 
+            this.#hexagonsColors.set(generated.hashCode(), this.#cryptoRandomRange(0, WorldMap.#COLORS.length - 1)); 
 
             return generated;
         };
@@ -151,75 +239,6 @@ export class WorldMap {
     }
 
     /**
-     * @param {OffscreenCanvasRenderingContext2D} context
-     * @param {Hexagon} hexagon 
-     */
-    #drawHexagonFill(context, hexagon) {
-        const corners = this.#layout.hexagonCorners(hexagon);
-        const fillPath = this.#layout.hexagonFillPath2D(hexagon, corners);
-
-        const color = this.#getColor(hexagon) ?? '#DDDDDD';
-
-        // Fill
-        context.fillStyle = color;
-        context.fill(fillPath);
-    }
-
-    /**
-     * @param {OffscreenCanvasRenderingContext2D} context
-     * @param {Hexagon} hexagon 
-     */
-    #drawHexagonBordersBlackOnly(context, hexagon) {
-        const corners = this.#layout.hexagonCorners(hexagon);
-        const color = this.#getColor(hexagon);
-
-        for (let directionIndex = 0; directionIndex < 6; directionIndex++){
-            const borderNeighbor = hexagon.neighbor(directionIndex);
-            const colorNeighbor = this.#getColor(borderNeighbor);
-
-            if (!this.#hexagons.has(borderNeighbor.hashCode())) {
-                context.strokeStyle = '#111111';
-            } else if (color === colorNeighbor) {
-                continue;
-            } else {
-                context.strokeStyle = '#111111';
-            }
-
-            const border = this.#layout.hexagonBorderPartPath2D(hexagon, directionIndex, corners);
-            context.stroke(border);
-        }
-    }
-
-    /**
-     * @param {OffscreenCanvasRenderingContext2D} context
-     * @param {Hexagon} hexagon 
-     */
-    #drawHexagonBordersColorOnly(context, hexagon) {
-        const corners = this.#layout.hexagonCorners(hexagon);
-        const color = this.#getColor(hexagon);
-
-        for (let directionIndex = 0; directionIndex < 6; directionIndex++){
-            const borderNeighbor = hexagon.neighbor(directionIndex);
-            const colorNeighbor = this.#getColor(borderNeighbor);
-
-            if (!this.#hexagons.has(borderNeighbor.hashCode())) {
-                continue;
-            } else if (color === colorNeighbor) {
-                if (!color) {
-                    context.strokeStyle = '#DDDDDD';
-                } else {
-                    context.strokeStyle = color;
-                }
-            } else {
-                continue;
-            }
-
-            const border = this.#layout.hexagonBorderPartPath2D(hexagon, directionIndex, corners);
-            context.stroke(border);
-        }
-    }
-
-    /**
      * Draws map onto canvas
      * @param {OffscreenCanvas} canvas 
      * @param {OffscreenCanvasRenderingContext2D} context 
@@ -230,18 +249,14 @@ export class WorldMap {
         context.strokeStyle = '#111111';
 
         for (const hexagon of this.onScreenHexagons()) {
-            this.#drawHexagonFill(context, hexagon);
-        }
+            const center = this.#layout.hexToPixel(hexagon);
+            const colorIndex = this.#hexagonsColors.get(hexagon.hashCode());
+            const zoomIndex = this.#zoomIndex;
 
-        context.lineCap = 'round';
+            const preRenderedHexagon = this.getPreRenderedHexagon(colorIndex, zoomIndex);
 
-        for (const hexagon of this.onScreenHexagons()) {
-            this.#drawHexagonBordersColorOnly(context, hexagon);
-        }
-
-        for (const hexagon of this.onScreenHexagons()) {
-            this.#drawHexagonBordersBlackOnly(context, hexagon);
-        }        
+            context.drawImage(preRenderedHexagon, ...center);
+        }    
     }
 
     /**
@@ -251,11 +266,11 @@ export class WorldMap {
         for (const hexagon of this.hexagons) {
             const centerOfHexagon = this.#layout.hexToPixel(hexagon);
 
-            if (centerOfHexagon.x + this.#layout.size.x < 0) continue;
-            if (centerOfHexagon.y + this.#layout.size.y < 0) continue;
+            if (centerOfHexagon.x + (this.#layout.size.x * 2) < 0) continue;
+            if (centerOfHexagon.y + (this.#layout.size.y * 2) < 0) continue;
             
-            if (centerOfHexagon.x - this.#layout.size.x > this.#window.innerWidth) continue;
-            if (centerOfHexagon.y - this.#layout.size.y > this.#window.innerHeight) continue;
+            if (centerOfHexagon.x - (this.#layout.size.x * 2) > this.#window.innerWidth) continue;
+            if (centerOfHexagon.y - (this.#layout.size.y * 2) > this.#window.innerHeight) continue;
 
             yield hexagon;
         }

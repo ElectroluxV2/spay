@@ -42,6 +42,8 @@ export class Game {
         const blob = await result.blob();
         const image = await createImageBitmap(blob);
         this.#waterPattern = this.#mainCanvasContext.createPattern(image, 'repeat');
+
+        await this.#worldMap.prerender();
     }
 
     #startFrameUpdate() {
