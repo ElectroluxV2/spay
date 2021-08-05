@@ -109,7 +109,7 @@ export class Game {
      * @param {Number} pageY 
      */
     onPointerDown(pageX, pageY) {
-        this.#dragStart = new Point(pageX, pageY);
+        this.#dragStart = new Point(pageX.toFixed(0), pageY.toFixed(0));
         this.#drag = true;
 
         !this.#isFrameUpdateStarted() && this.#startFrameUpdate();
@@ -132,7 +132,7 @@ export class Game {
      * @param {Number} pageY 
      */
     onPointerMove(pageX, pageY) {
-        const pointer = new Point(pageX, pageY);
+        const pointer = new Point(pageX.toFixed(0), pageY.toFixed(0));
 
 
         if (this.#drag) {
