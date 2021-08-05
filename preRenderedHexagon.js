@@ -1,19 +1,28 @@
 export class PreRenderedHexagon extends OffscreenCanvas {
     size;
     color;
-    deletedBorderIndexes;
+    removeBorderIndexes;
 
     /**
      * 
      * @param {Point} size
      * @param {String} color
-     * @param {Number[]} deletedBorderIndexes
+     * @param {String} removeBorderIndexes
      */
-    constructor(size, color, deletedBorderIndexes) {
-        super(...size.multiply(2));
+    constructor(size, color, removeBorderIndexes) {
+        super(...size.multiply(2.2)); // Border offset
+        this.getContext('2d').translate(size.multiply(0.2).x / 2, 0); // Border offset
 
         this.size = size;
         this.color = color;
-        this.deletedBorderIndexes = deletedBorderIndexes;
+        this.removeBorderIndexes = removeBorderIndexes;
+    }
+
+    async toImageURL() {
+        const blob = await this.convertToBlob({
+            type: 'image/png',
+        });
+
+        return new FileReaderSync().readAsDataURL(blob);
     }
 }

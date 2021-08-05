@@ -70,42 +70,75 @@ export class WorldMap {
 
         const main = new Hexagon(0, 0, 0);
         this.#hexagons.set(main.hashCode(), main);
-        this.#hexagonsColors.set(main.hashCode(), 9); 
+        this.#hexagonsColors.set(main.hashCode(), 0); 
 
-        this.#generatorV4(main, 5000, 5000, true, false);
+        this.#generatorV4(main, 50000, 50000, true, false);
 
         // TODO: FIXME: Map is not always in center
         this.#layout.origin = this.#layout.hexToPixel(this.centerHexagon).multiply(0.5);
-
-        this.#preRenderedHexagons = new Map();
-
-        for (let colorIndex = 0; colorIndex < WorldMap.#COLORS.length; colorIndex++) {
-            this.#preRenderedHexagons.set(colorIndex, new Map());
-        }
     }
 
-    getPreRenderedHexagon(colorIndex, zoomIndex) {
-        return this.#preRenderedHexagons.get(colorIndex).get(zoomIndex);
+    getPreRenderedHexagon(deletedBorderIndexes, colorIndex, zoomIndex) {
+        return this.#preRenderedHexagons.get(deletedBorderIndexes).get(colorIndex).get(zoomIndex);
     }
 
-    setPreRenderedHexagon(colorIndex, zoomIndex, preRenderedHexagon) {
-        this.#preRenderedHexagons.get(colorIndex).set(zoomIndex, preRenderedHexagon);
+    setPreRenderedHexagon(deletedBorderIndexes, colorIndex, zoomIndex, preRenderedHexagon) {
+        this.#preRenderedHexagons.get(deletedBorderIndexes).get(colorIndex).set(zoomIndex, preRenderedHexagon);
     }
 
     async prerender() {
-        // TODO: FIXME: Missing border blend variants
-        for (let colorIndex = 0; colorIndex < WorldMap.#COLORS.length; colorIndex++) {
-            const color = WorldMap.#COLORS[colorIndex];
+        let preRenderedHexagonCounter = 0;
 
-            for (let zoomIndex = 0; zoomIndex <= WorldMap.#MAX_ZOOM; zoomIndex++) {
-                const size = new Point(WorldMap.#ZOOM_STAGES[zoomIndex], WorldMap.#ZOOM_STAGES[zoomIndex]);
+        // Generate all possible variants of hexagon
+        this.#preRenderedHexagons = new Map();
+        const allPossibleDeletedBorderIndexes = new Set(['none']);
+
+        const pushSequence = (n, k, length, array, output) => {
+            if (length == k) {
+                const numbers = [];
+                for (let i = 0; i < k; i++) {
+                    numbers.push(array[i]);
+                }
+                output.add(numbers.sort().join(''));
+                return;
+            }
     
-                const preRenderedHexagon = new PreRenderedHexagon(size, color, []);
-                await this.prerenderSingleHexagon(preRenderedHexagon);
-                this.setPreRenderedHexagon(colorIndex, zoomIndex, preRenderedHexagon);
+            let i = (length == 0) ? 0 : array[length - 1] + 1;
+    
+            length++;
+    
+            while (i <= n) {
+                array[length - 1] = i;
+                pushSequence(n, k, length, array, output);
+                i++;
+            }
+    
+            length--;
+        }
+
+        for (let removeBorderCount = 1; removeBorderCount <= 6; removeBorderCount++) {
+            pushSequence(5, removeBorderCount, 0, [], allPossibleDeletedBorderIndexes);
+        }
+
+        for (const deletedBorderIndexes of allPossibleDeletedBorderIndexes) {
+            this.#preRenderedHexagons.set(deletedBorderIndexes, new Map());
+
+            for (let colorIndex = 0; colorIndex < WorldMap.#COLORS.length; colorIndex++) {
+                this.#preRenderedHexagons.get(deletedBorderIndexes).set(colorIndex, new Map());
+                const color = WorldMap.#COLORS[colorIndex];
+    
+                for (let zoomIndex = 0; zoomIndex <= WorldMap.#MAX_ZOOM; zoomIndex++) {
+                    const size = new Point(WorldMap.#ZOOM_STAGES[zoomIndex], WorldMap.#ZOOM_STAGES[zoomIndex]);
+        
+                    const preRenderedHexagon = new PreRenderedHexagon(size, color, deletedBorderIndexes);
+                    await this.prerenderSingleHexagon(preRenderedHexagon);
+                    this.setPreRenderedHexagon(deletedBorderIndexes, colorIndex, zoomIndex, preRenderedHexagon);
+                    preRenderedHexagonCounter++;
+                }
             }
         }
-        
+
+        console.info(`Pre-rendered total ${preRenderedHexagonCounter} hexagon textures.`);        
     }
 
     /**
@@ -114,15 +147,7 @@ export class WorldMap {
      */
     async prerenderSingleHexagon(preRenderedHexagon) {
         const context = preRenderedHexagon.getContext('2d');
-        this.#drawHexagon(context, new Hexagon(0, 0), new Layout(Orientation.FLAT, preRenderedHexagon.size, preRenderedHexagon.size), preRenderedHexagon.deletedBorderIndexes, preRenderedHexagon.color);
-   
-        // const blob = await preRenderedHexagon.convertToBlob({
-        //     type: 'image/png',
-        // });
-
-        // const url = new FileReaderSync().readAsDataURL(blob);
-
-        // console.log(url);
+        this.#drawHexagon(context, new Hexagon(0, 0), new Layout(Orientation.FLAT, preRenderedHexagon.size, preRenderedHexagon.size), preRenderedHexagon.removeBorderIndexes, preRenderedHexagon.color);
     }
 
     /**
@@ -130,7 +155,7 @@ export class WorldMap {
      * @param {Hexagon} hexagon
      * @param {Layout} layout
      * @param {String} color
-     * @param {Number[]} removeBorderIndexes
+     * @param {String} removeBorderIndexes
      */
      #drawHexagon(context, hexagon, layout, removeBorderIndexes, color) {
         const corners = layout.hexagonCorners(hexagon);
@@ -141,8 +166,10 @@ export class WorldMap {
         context.fill(fillPath);
 
         // Color borders
+        context.lineWidth = this.#scaleFromZoom(6, layout.size.x * 1.5);
+        context.lineCap = 'round';
         context.strokeStyle = color;
-        for (let directionIndex = 0; directionIndex < 6; directionIndex++){
+        for (let directionIndex = 0; directionIndex < 6 && removeBorderIndexes !== 'none'; directionIndex++) {
             
             // Check if color (directionIndex is NOT included in removeBorderIndexes)
             if (!removeBorderIndexes.includes(directionIndex)) continue;
@@ -153,10 +180,10 @@ export class WorldMap {
 
         // Black borders
         context.strokeStyle = '#111111';
-        for (let directionIndex = 0; directionIndex < 6; directionIndex++){
+        for (let directionIndex = 0; directionIndex < 6; directionIndex++) {
             
             // Check if color (directionIndex is included in removeBorderIndexes)
-            if (removeBorderIndexes.includes(directionIndex)) continue;
+            if (removeBorderIndexes !== 'none' && removeBorderIndexes.includes(directionIndex)) continue;
 
             const border = this.#layout.hexagonBorderPartPath2D(hexagon, directionIndex, corners);
             context.stroke(border);
@@ -230,12 +257,9 @@ export class WorldMap {
      * @param {Number} initialSize 
      * @returns 
      */
-    #scaleFromZoom(initialSize) {
-        return Math.max(Math.max(1, Math.min((this.zoom -this.#initialZoom + initialSize) * 0.1, 10)) / 2, 1);
-    }
-
-    #getColor(hexagon) {
-        return WorldMap.#COLORS[this.#hexagonsColors.get(hexagon.hashCode())];
+    #scaleFromZoom(initialSize, currentZoom = this.zoom) {
+        // TODO: FIXME: Its useless in current form
+        return Math.max(Math.max(1, Math.min((currentZoom -this.#initialZoom + initialSize) * 0.1, 10)) / 2, 1);
     }
 
     /**
@@ -243,7 +267,8 @@ export class WorldMap {
      * @param {OffscreenCanvas} canvas 
      * @param {OffscreenCanvasRenderingContext2D} context 
      */
-    draw(canvas, context) {
+    async draw(canvas, context) {
+        context.imageSmoothingEnabled = false;
         context.lineJoin = 'bevel';
         context.lineWidth = this.#scaleFromZoom(3);
         context.strokeStyle = '#111111';
@@ -251,11 +276,26 @@ export class WorldMap {
         for (const hexagon of this.onScreenHexagons()) {
             const center = this.#layout.hexToPixel(hexagon);
             const colorIndex = this.#hexagonsColors.get(hexagon.hashCode());
+
+            const removedBorders = [];
+            for (let directionIndex = 0; directionIndex < 6; directionIndex++) {
+                const borderNeighbor = hexagon.neighbor(directionIndex);
+
+                if (!this.#hexagons.has(borderNeighbor.hashCode())) continue;
+
+                const colorNeighborIndex = this.#hexagonsColors.get(borderNeighbor.hashCode());
+
+                if (colorIndex !== colorNeighborIndex) continue;
+
+                removedBorders.push(directionIndex);
+            }
+
+            const stringValue = removedBorders.sort().join('');
+            const removedBorderIndexes = stringValue.length ? stringValue : 'none';
             const zoomIndex = this.#zoomIndex;
 
-            const preRenderedHexagon = this.getPreRenderedHexagon(colorIndex, zoomIndex);
-
-            context.drawImage(preRenderedHexagon, ...center);
+            context.drawImage(this.getPreRenderedHexagon(removedBorderIndexes, colorIndex, zoomIndex), ...center);
+  
         }    
     }
 
