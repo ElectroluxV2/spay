@@ -28,7 +28,10 @@ export class Game {
 
         this.#window = window;
         this.#mainCanvas = mainCanvas;
-        this.#mainCanvasContext = mainCanvas.getContext('2d');
+        this.#mainCanvasContext = mainCanvas.getContext('2d', {
+            alpha: false,
+            desynchronized: true
+        });
         this.#drag = false;
         this.keyboardStates = new Map();
 
@@ -68,14 +71,8 @@ export class Game {
         const image = await createImageBitmap(blob);
         this.#waterPattern = this.#mainCanvasContext.createPattern(image, 'repeat');
 
-        for await (const {p, t} of this.#worldMap.prerender()) {
-            await updateProgress(p / t, `[1 of 2] Pre-rendering hexagon textures. ${p} / ${t}`);
-        }
-
-        lastProgress = 0;
-
         for await (const {p, t} of this.#worldMap.generate()) {
-            await updateProgress(p / t, `[2 of 2] Generating map. ${p} / ${t}`);
+            await updateProgress(p / t, `Generating map. ${p} / ${t}`);
         }
     }
 
@@ -156,7 +153,7 @@ export class Game {
      * @param {WheelEvent} WheelEvent 
      */
     onWheel(deltaX, deltaY) {
-        Math.sign(deltaY) > 0 ? this.#worldMap.zoomOut() : this.#worldMap.zoomIn();
+        this.#worldMap.zoom += -Math.sign(deltaY);
         this.#worldMap.layout.size.x = this.#worldMap.layout.size.y = this.#worldMap.zoom;
 
         this.#thresholdFrameUpdate();
@@ -164,6 +161,7 @@ export class Game {
 
     #drawSingleFrame() {
         // this.#mainCanvasContext.fillStyle = '#7FDBFF';
+        this.#mainCanvasContext.reset();
         this.#mainCanvasContext.fillStyle = this.#waterPattern;
         this.#mainCanvasContext.fillRect(0, 0, this.#mainCanvas.width, this.#mainCanvas.height);
 
@@ -171,17 +169,17 @@ export class Game {
     }
 
     
-    loop() {
-        // this.#mainCanvasContext.reset();
-        this.#mainCanvasContext.fillStyle = '#7FDBFF';
-        this.#mainCanvasContext.fillRect(0, 0, this.#mainCanvas.width, this.#mainCanvas.height);
+    // loop() {
+    //     // this.#mainCanvasContext.reset();
+    //     this.#mainCanvasContext.fillStyle = '#7FDBFF';
+    //     this.#mainCanvasContext.fillRect(0, 0, this.#mainCanvas.width, this.#mainCanvas.height);
 
-        this.#worldMap.draw(this.#mainCanvasContext, this.#mainCanvasContext);
+    //     this.#worldMap.draw(this.#mainCanvasContext, this.#mainCanvasContext);
     
-        // this.#mainCanvasContext.fillStyle = '#00000010';
-        // this.#mainCanvasContext.strokeStyle = '#00000010';
-        // this.#selectedHexagon && this.#drawHexagon(this.#selectedHexagon);
+    //     // this.#mainCanvasContext.fillStyle = '#00000010';
+    //     // this.#mainCanvasContext.strokeStyle = '#00000010';
+    //     // this.#selectedHexagon && this.#drawHexagon(this.#selectedHexagon);
 
-        requestAnimationFrame(this.loop.bind(this));
-    }
+    //     requestAnimationFrame(this.loop.bind(this));
+    // }
 }
