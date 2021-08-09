@@ -61,7 +61,7 @@ export class Layout {
      * @param {Point[]} corners
      * @returns {Path2D}
      */
-    hexagonFillPath2D(hexagon, corners = layout.hexagonCorners(hexagon)) {
+    hexagonFillPath2D(hexagon, corners) {
         return Layout.hexagonFillPath2D(this, hexagon, corners);
     }
 
@@ -72,7 +72,7 @@ export class Layout {
      * @param {Point[]} corners 
      * @returns {Path2D}
      */
-    hexagonBorderPartPath2D(hexagon, directionIndex, corners = layout.hexagonCorners(hexagon)) {
+    hexagonBorderPartPath2D(hexagon, directionIndex, corners) {
         return Layout.hexagonBorderPartPath2D(this, hexagon, directionIndex, corners);
     }
 

@@ -174,6 +174,35 @@ export class WorldMap {
     }
 
     /**
+     * 
+     * @param {Number} guildId
+     * @returns {Path2D[]}
+     */
+    #getGuildBorder(guildId) {
+        const paths = [];
+
+        
+
+        for (const hexagon of this.onScreenHexagons()) {
+            if (this.#getHexagonProperty(hexagon, Hexagon.PROPERTIES.GUILD) !== guildId) continue;
+
+            const corners = this.#layout.hexagonCorners(hexagon);
+
+            // Draw border only on these sides where enemy is next to
+            for (let directionIndex = 0; directionIndex < 6; directionIndex++) {
+                const neighbor = hexagon.neighbor(directionIndex);
+
+                // Is enemy?
+                if (this.#getHexagonProperty(neighbor, Hexagon.PROPERTIES.GUILD) === guildId) continue;
+                
+                paths.push(this.#layout.hexagonBorderPartPath2D(hexagon, directionIndex, corners));
+            }
+        }
+
+        return paths;
+    }
+
+    /**
      * Draws map onto canvas
      * @param {OffscreenCanvas} canvas 
      * @param {OffscreenCanvasRenderingContext2D} context 
@@ -194,7 +223,28 @@ export class WorldMap {
             context.fillStyle = `#${(Number(`0x1${color.substr(1)}`) ^ 0xFFFFFF).toString(16).substr(1).toUpperCase()}`;
             context.font = `bold ${this.#zoom}px Arial`;
             context.fillText(guildId,  center.x - (textSize.width / 2), center.y + ((textSize.actualBoundingBoxAscent + textSize.actualBoundingBoxDescent) / 2));
-        }    
+        }
+
+        // TODO: Change to Set in order to skip dupes
+        const borderPaths = [];
+
+        for (const guildId of this.onScreenGuilds()) {
+            borderPaths.push(this.#getGuildBorder(guildId));
+        }
+
+        const combinedPath = new Path2D();
+
+        for (const paths of borderPaths) {
+
+            for (const path of paths) {
+                combinedPath.addPath(path);
+            }
+        }
+
+        // Black borders
+        context.lineWidth = 3;
+        context.strokeStyle = '#111111';
+        context.stroke(combinedPath);
     }
 
     /**
@@ -211,6 +261,30 @@ export class WorldMap {
             if (centerOfHexagon.y - (this.#layout.size.y * 2) > this.#window.innerHeight) continue;
 
             yield hexagon;
+        }
+    }
+
+    /**
+     * @returns {Generator<Number>}
+     */
+    *onScreenGuilds() {
+        const guildIds = new Set();
+
+        for (const hexagon of this.onScreenHexagons()) {
+            const guildId = this.#getHexagonProperty(hexagon, Hexagon.PROPERTIES.GUILD);
+
+
+            const lastSize = guildIds.size;
+
+            guildIds.add(guildId);
+
+            const newSize = guildIds.size;
+
+
+            // No changes
+            if (lastSize === newSize) continue;
+
+            yield guildId;
         }
     }
 
