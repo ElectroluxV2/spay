@@ -66,22 +66,25 @@ export class WorldMap {
 
         // TODO: FIXME: Map is not always in center
         this.#layout.origin = this.#layout.hexToPixel(this.centerHexagon).multiply(0.5);
-    }
-
-    visit(cell, id) {
-        if (this.#hasHexagonProperty(cell, Hexagon.PROPERTIES.GUILD)) return;
-
-        this.#setHexagonProperty(cell, Hexagon.PROPERTIES.GUILD, id);
-
-        for (const neighbor of cell.closeNeighbors()) {
-            if (this.#getHexagonProperty(cell, Hexagon.PROPERTIES.COLOR) === this.#getHexagonProperty(neighbor, Hexagon.PROPERTIES.COLOR)) {
-                this.visit(neighbor, id);
-            }
-        }
-    }
+    }  
 
     #populateGroup(hexagon, lastHexagonGroupId) {
-        this.visit(hexagon, lastHexagonGroupId);
+        const stack = [];
+        stack.push(hexagon);
+    
+        while (stack.length) {
+            hexagon = stack.pop();
+
+            if (this.#hasHexagonProperty(hexagon, Hexagon.PROPERTIES.GUILD)) continue;
+
+            this.#setHexagonProperty(hexagon, Hexagon.PROPERTIES.GUILD, lastHexagonGroupId);
+
+            for (const neighbor of hexagon.closeNeighbors()) {
+                if (this.#getHexagonProperty(hexagon, Hexagon.PROPERTIES.COLOR) === this.#getHexagonProperty(neighbor, Hexagon.PROPERTIES.COLOR)) {
+                    stack.push(neighbor);
+                }
+            }
+        }
     }
 
     #makeGroups() {
