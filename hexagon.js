@@ -10,7 +10,8 @@ export class Hexagon extends Array {
     static DIRECTIONS = [...Hexagon.NEIGHBOR_DIRECTIONS, ...Hexagon.DIAGONAL_DIRECTIONS];
     static PROPERTIES = {
         COLOR: 'color',
-        UNIT: 'unit'
+        UNIT: 'unit',
+        GUILD: 'guild'
     };
     
     /**
@@ -96,6 +97,15 @@ export class Hexagon extends Array {
      */
     neighbor(directionIndex) {
         return Hexagon.neighbor(this, directionIndex);
+    }
+
+    /**
+     * @returns {Generator<Hexagon>}
+     */
+    *closeNeighbors() {
+        for (let directionIndex = 0; directionIndex < Hexagon.NEIGHBOR_DIRECTIONS.length; directionIndex++) {
+            yield this.neighbor(directionIndex);
+        }
     }
 
     /**

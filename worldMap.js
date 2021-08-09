@@ -29,6 +29,7 @@ export class WorldMap {
     #zoom;
     #hexagons;
     #hexagonsProperties; // This cannot contain WeakMaps due to fact that Hexagon is different every time, only hashCode is same.
+    #lastHexagonGroupId;
     #centerHexagon;
 
     /**
@@ -51,14 +52,46 @@ export class WorldMap {
     }
 
     #getHexagonProperty(hexagon, property) {
-        return this.#hexagonsProperties.get(property).get(hexagon.hashCode());
+        return this.#hexagonsProperties.get(property)?.get(hexagon.hashCode()) ?? undefined;
+    }
+
+    #hasHexagonProperty(hexagon, property) {
+        return this.#hexagonsProperties.get(property)?.has(hexagon.hashCode()) ?? false;
     }
 
     async *generate() {
-        yield* this.#generatorV4(null, 100, true, false);
+        yield* this.#generatorV4(null, 1000, true, false);
+
+        this.#makeGroups();
 
         // TODO: FIXME: Map is not always in center
         this.#layout.origin = this.#layout.hexToPixel(this.centerHexagon).multiply(0.5);
+    }
+
+    visit(cell, id) {
+        if (this.#hasHexagonProperty(cell, Hexagon.PROPERTIES.GUILD)) return;
+
+        this.#setHexagonProperty(cell, Hexagon.PROPERTIES.GUILD, id);
+
+        for (const neighbor of cell.closeNeighbors()) {
+            if (this.#getHexagonProperty(cell, Hexagon.PROPERTIES.COLOR) === this.#getHexagonProperty(neighbor, Hexagon.PROPERTIES.COLOR)) {
+                this.visit(neighbor, id);
+            }
+        }
+    }
+
+    #populateGroup(hexagon, lastHexagonGroupId) {
+        this.visit(hexagon, lastHexagonGroupId);
+    }
+
+    #makeGroups() {
+        this.#lastHexagonGroupId = 0;
+        
+        for (const hexagon of this.hexagons) {
+            if (this.#hasHexagonProperty(hexagon, Hexagon.PROPERTIES.GUILD)) continue;
+
+            this.#populateGroup(hexagon, ++this.#lastHexagonGroupId);
+        }
     }
 
     #cryptoRandomRange(min, max) {
@@ -147,10 +180,17 @@ export class WorldMap {
             const corners = this.#layout.hexagonCorners(hexagon);
             const fillPath = this.#layout.hexagonFillPath2D(hexagon, corners);
             const color = WorldMap.#COLORS[this.#getHexagonProperty(hexagon, Hexagon.PROPERTIES.COLOR)];
+            const center = this.#layout.hexToPixel(hexagon);
+            const guildId = this.#getHexagonProperty(hexagon, Hexagon.PROPERTIES.GUILD);
     
             // Fill with Stroke to fix issue where blending line between hexagons is visible
             context.fillStyle = color;
             context.fill(fillPath);
+
+            const textSize = context.measureText(guildId);
+            context.fillStyle = `#${(Number(`0x1${color.substr(1)}`) ^ 0xFFFFFF).toString(16).substr(1).toUpperCase()}`;
+            context.font = `bold ${this.#zoom}px Arial`;
+            context.fillText(guildId,  center.x - (textSize.width / 2), center.y + ((textSize.actualBoundingBoxAscent + textSize.actualBoundingBoxDescent) / 2));
         }    
     }
 
