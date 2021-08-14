@@ -1,6 +1,7 @@
 import { Orientation } from './orientation.js';
 import { Point } from './point.js';
 import { Hexagon } from './hexagon.js';
+import { Line2D } from './line2D.js';
 
 export class Layout {
     orientation;
@@ -72,8 +73,8 @@ export class Layout {
      * @param {Point[]} corners 
      * @returns {Path2D}
      */
-    hexagonBorderPartPath2D(hexagon, directionIndex, corners) {
-        return Layout.hexagonBorderPartPath2D(this, hexagon, directionIndex, corners);
+    hexagonBorderPart(hexagon, directionIndex, corners) {
+        return Layout.hexagonBorderPart(this, hexagon, directionIndex, corners);
     }
 
     /**
@@ -177,12 +178,9 @@ export class Layout {
      * @param {Hexagon} hexagon 
      * @param {Number} directionIndex 
      * @param {Point[]} corners 
-     * @returns {Path2D}
+     * @returns {Line2D}
      */
-    static hexagonBorderPartPath2D(layout, hexagon, directionIndex, corners = layout.hexagonCorners(hexagon)) {
-        const path = new Path2D();
-        path.moveTo(...corners[directionIndex]);
-        path.lineTo(...corners[(directionIndex + 1) % 6]);
-        return path;
+    static hexagonBorderPart(layout, hexagon, directionIndex, corners = layout.hexagonCorners(hexagon)) {
+        return new Line2D(corners[directionIndex], corners[(directionIndex + 1) % 6]);
     }
 }

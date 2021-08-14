@@ -2,6 +2,7 @@ import { Hexagon } from './hexagon.js';
 import { Point } from './point.js';
 import { Layout } from './layout.js';
 import { Orientation } from './orientation.js';
+import { EqualsSet } from './EqualsSet.js';
 export class WorldMap {
     static #MINIMUM_ZOOM = 0.5;
     static #INITIAL_ZOOM = 20;
@@ -179,9 +180,7 @@ export class WorldMap {
      * @returns {Path2D[]}
      */
     #getGuildBorder(guildId) {
-        const paths = [];
-
-        
+        const lines = new EqualsSet();    
 
         for (const hexagon of this.onScreenHexagons()) {
             if (this.#getHexagonProperty(hexagon, Hexagon.PROPERTIES.GUILD) !== guildId) continue;
@@ -195,11 +194,11 @@ export class WorldMap {
                 // Is enemy?
                 if (this.#getHexagonProperty(neighbor, Hexagon.PROPERTIES.GUILD) === guildId) continue;
                 
-                paths.push(this.#layout.hexagonBorderPartPath2D(hexagon, directionIndex, corners));
+                lines.add(this.#layout.hexagonBorderPart(hexagon, directionIndex, corners));
             }
         }
 
-        return paths;
+        return lines;
     }
 
     /**
@@ -226,19 +225,18 @@ export class WorldMap {
         }
 
         // TODO: Change to Set in order to skip dupes
-        const borderPaths = [];
+        const blackBorders = new EqualsSet();
 
         for (const guildId of this.onScreenGuilds()) {
-            borderPaths.push(this.#getGuildBorder(guildId));
+            blackBorders.combineWith(this.#getGuildBorder(guildId));
         }
 
         const combinedPath = new Path2D();
 
-        for (const paths of borderPaths) {
-
-            for (const path of paths) {
-                combinedPath.addPath(path);
-            }
+        for (const line of blackBorders) {
+            // console.log(line);
+            combinedPath.moveTo(...line.first);
+            combinedPath.lineTo(...line.second);
         }
 
         // Black borders
