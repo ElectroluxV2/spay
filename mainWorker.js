@@ -7,7 +7,7 @@ const workerContext = {
     constructor: ({mainCanvas, window}) => {
         workerContext.mainCanvas = mainCanvas;
         workerContext.windowOnResize({window});
-        workerContext.game = new Game(workerContext.mainCanvas, window);
+        workerContext.game = new Game(mainCanvas, window);
     },
     windowOnKeyDown: ({key}) => {
         workerContext.game.keyboardStates[key] = true;
@@ -29,8 +29,6 @@ const workerContext = {
         workerContext.game?.onWheel(deltaX, deltaY);
     }
 };
-
-console.log('b');
 
 onmessage = ({data} = event) => workerContext[data.function](data);
 

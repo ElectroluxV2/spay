@@ -4,7 +4,8 @@ import { WorldMap } from './worldMap.js';
 
 export class Game {
     #mainCanvas;
-    #mainCanvasContext;
+    // #mainCanvasContext;
+    #mainCanvasGL;
     #window;
     #animationFrameId;
     #thresholdFrameUpdateTimer;
@@ -24,16 +25,14 @@ export class Game {
      * @param {{innerWidth: Number, innerHeight: Number}} window 
      */
     constructor(mainCanvas, window) {
-        console.log('game');
-
         this.#window = window;
         this.#mainCanvas = mainCanvas;
-        this.#mainCanvasContext = mainCanvas.getContext('2d', {
-            alpha: false,
-            desynchronized: true
-        });
+        this.#mainCanvasGL = mainCanvas.getContext('webgl2');
         this.#drag = false;
         this.keyboardStates = new Map();
+
+        this.#mainCanvasGL.clearColor(0, 0, 0, 1);
+        this.#mainCanvasGL.clear(this.#mainCanvasGL.COLOR_BUFFER_BIT | this.#mainCanvasGL.DEPTH_BUFFER_BIT);
 
         this.#loadLevel().then(this.#singleFrameUpdate.bind(this));
     }
@@ -42,20 +41,20 @@ export class Game {
         const progressBar = new ProgressBar({x: (this.#window.innerWidth / 2) - (this.#window.innerWidth / 3 / 2), y: (this.#window.innerHeight / 2), width: this.#window.innerWidth / 3, height: 64}, '#989fce', 0);
         const center = new Point(this.#window.innerWidth, this.#window.innerHeight);
 
-        this.#worldMap = new WorldMap(center, this.#window);
+        this.#worldMap = new WorldMap(center, this.#window, this.#mainCanvasGL);
 
         let lastProgress = 0;
         const updateProgress = async (progress, text) => {
             if (Math.trunc((progress * 100)) <= lastProgress) return;
 
-            this.#mainCanvasContext.fillStyle = '#272838';
-            this.#mainCanvasContext.fillRect(0, 0, ...center);
-            progressBar.draw(this.#mainCanvasContext, progress);
+            // this.#mainCanvasContext.fillStyle = '#272838';
+            // this.#mainCanvasContext.fillRect(0, 0, ...center);
+            // progressBar.draw(this.#mainCanvasContext, progress);
             
-            const textSize = this.#mainCanvasContext.measureText(text);
-            this.#mainCanvasContext.fillStyle = '#7D6B91';
-            this.#mainCanvasContext.font = 'bold 16px Arial';
-            this.#mainCanvasContext.fillText(text,  (this.#window.innerWidth / 2) - (textSize.width / 2), (this.#window.innerHeight / 2) + 80 + textSize.actualBoundingBoxDescent);
+            // const textSize = this.#mainCanvasContext.measureText(text);
+            // this.#mainCanvasContext.fillStyle = '#7D6B91';
+            // this.#mainCanvasContext.font = 'bold 16px Arial';
+            // this.#mainCanvasContext.fillText(text,  (this.#window.innerWidth / 2) - (textSize.width / 2), (this.#window.innerHeight / 2) + 80 + textSize.actualBoundingBoxDescent);
 
             lastProgress = Math.trunc((progress * 100));
 
@@ -69,7 +68,7 @@ export class Game {
         const result = await fetch('./background_water.png');
         const blob = await result.blob();
         const image = await createImageBitmap(blob);
-        this.#waterPattern = this.#mainCanvasContext.createPattern(image, 'repeat');
+        // this.#waterPattern = this.#mainCanvasContext.createPattern(image, 'repeat');
 
         for await (const {p, t} of this.#worldMap.generate()) {
             await updateProgress(p / t, `Generating map. ${p} / ${t}`);
@@ -161,11 +160,14 @@ export class Game {
 
     #drawSingleFrame() {
         // this.#mainCanvasContext.fillStyle = '#7FDBFF';
-        this.#mainCanvasContext.reset();
-        this.#mainCanvasContext.fillStyle = this.#waterPattern;
-        this.#mainCanvasContext.fillRect(0, 0, this.#mainCanvas.width, this.#mainCanvas.height);
+        // this.#mainCanvasContext.reset();
+        // this.#mainCanvasContext.fillStyle = this.#waterPattern;
+        // this.#mainCanvasContext.fillRect(0, 0, this.#mainCanvas.width, this.#mainCanvas.height);
 
-        this.#worldMap.draw(this.#mainCanvasContext, this.#mainCanvasContext);
+        
+        this.#mainCanvasGL.clearColor(0, 0, 0, 1);
+        this.#mainCanvasGL.clear(this.#mainCanvasGL.COLOR_BUFFER_BIT);
+        this.#worldMap.draw(this.#mainCanvas, this.#mainCanvasGL);
     }
 
     

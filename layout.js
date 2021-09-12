@@ -46,6 +46,17 @@ export class Layout {
         return Layout.hexagonCorner(this, cornerIndex);
     }
 
+     /**
+     * 
+     * @param {Point} hexagonCorner 
+     * @param {Point} hexagonCenter 
+     * @param {Number} widthMultiplier 
+     * @returns {Point}
+     */
+    borderCorner(hexagonCorner, hexagonCenter, widthMultiplier) {
+        return Layout.borderCorner(hexagonCorner, hexagonCenter, widthMultiplier);
+    }
+
     /**
      * Calculates every corner in hexagon
      * @param {Hexagon} hexagon
@@ -132,6 +143,17 @@ export class Layout {
         const size = layout.size;
         const angle = 2.0 * Math.PI * (o.a - cornerIndex) / 6.0;
         return new Point(size.x * Math.cos(angle), size.y * Math.sin(angle));
+    }
+
+    /**
+     * 
+     * @param {Point} hexagonCorner 
+     * @param {Point} hexagonCenter 
+     * @param {Number} widthMultiplier 
+     * @returns {Point}
+     */
+    static borderCorner(hexagonCorner, hexagonCenter, widthMultiplier) {
+        return hexagonCenter.add(new Point(hexagonCorner.x - hexagonCenter.x, hexagonCorner.y - hexagonCenter.y).multiply(widthMultiplier));
     }
 
     /**

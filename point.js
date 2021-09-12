@@ -64,6 +64,14 @@ export class Point extends Array {
         return new Point(this.x * scalar, this.y * scalar);
     }
 
+    add(other) {
+        return new Point(this.x + other.x, this.y + other.y);
+    }
+
+    sub(other) {
+        return new Point(this.x - other.x, this.y - other.y);
+    }
+
     set x(value) {
         this[0] = value;
     }
