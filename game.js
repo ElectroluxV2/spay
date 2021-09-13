@@ -70,7 +70,7 @@ export class Game {
         const image = await createImageBitmap(blob);
         // this.#waterPattern = this.#mainCanvasContext.createPattern(image, 'repeat');
 
-        for await (const {p, t} of this.#worldMap.generate()) {
+        for await (const {p, t} of this.#worldMap.generate(this.#mainCanvasGL)) {
             await updateProgress(p / t, `Generating map. ${p} / ${t}`);
         }
     }
@@ -135,8 +135,8 @@ export class Game {
             const dx = this.#dragStart.x - pointer.x;
             const dy = this.#dragStart.y - pointer.y;
 
-            this.#worldMap.layout.origin.x -= dx;
-            this.#worldMap.layout.origin.y -= dy;
+            this.#worldMap.transform.x -= dx;
+            this.#worldMap.transform.y -= dy;
 
             this.#dragStart.x -= dx;
             this.#dragStart.y -= dy;
@@ -152,7 +152,7 @@ export class Game {
      * @param {WheelEvent} WheelEvent 
      */
     onWheel(deltaX, deltaY) {
-        this.#worldMap.zoom += -Math.sign(deltaY);
+        this.#worldMap.zoom += -Math.sign(deltaY) * 0.1;
         this.#worldMap.layout.size.x = this.#worldMap.layout.size.y = this.#worldMap.zoom;
 
         this.#thresholdFrameUpdate();

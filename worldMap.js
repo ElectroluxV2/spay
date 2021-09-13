@@ -4,7 +4,7 @@ import { Layout } from './layout.js';
 import { Orientation } from './orientation.js';
 export class WorldMap {
     static #MINIMUM_ZOOM = 0.5;
-    static #INITIAL_ZOOM = 20;
+    static #INITIAL_ZOOM = 0.5;
     static #MAXIMUM_ZOOM = 90;
 
     static #COLORS = [
@@ -34,6 +34,8 @@ export class WorldMap {
 
     #program;
 
+    transform = new Point(0, 0);
+
     /**
      * @param {Point} origin
      */
@@ -51,10 +53,14 @@ export class WorldMap {
             layout (location=1) in vec3 color;
 
             uniform vec2 u_resolution;
+            uniform vec2 u_translation;
+            uniform vec2 u_scale;
             out vec3 vColor;
       
             void main() {
-                vec2 zeroToOne = a_position / u_resolution;
+                vec2 scaledPosition = a_position * u_scale;
+                vec2 position = scaledPosition + u_translation;
+                vec2 zeroToOne = position / u_resolution;
                 vec2 zeroToTwo = zeroToOne * 2.0;
                 vec2 clipSpace = zeroToTwo - 1.0;
             
@@ -126,13 +132,52 @@ export class WorldMap {
         return this.#hexagonsProperties.get(property)?.has(hexagon.hashCode()) ?? false;
     }
 
-    async *generate() {
-        yield* this.#generatorV4(null, 1_0_000, true, false);
+    async *generate(gl) {
+        yield* this.#generatorV4(null, 5_00_000, true, false);
 
         this.#makeGroups();
 
         // TODO: FIXME: Map is not always in center
         this.#layout.origin = this.#layout.hexToPixel(this.centerHexagon).multiply(0.5);
+
+        console.time('CALC');
+        let trianglesCounter = 0;
+        console.log(this.#hexagons.size);
+        for (const hexagon of this.#hexagons.values()) {
+            trianglesCounter += 6;
+
+            const colorHEX = WorldMap.#COLORS[this.#getHexagonProperty(hexagon, Hexagon.PROPERTIES.COLOR)].substr(1);
+            const color = [
+                parseInt(colorHEX.substr(0, 2), 16) / 255,
+                parseInt(colorHEX.substr(2, 2), 16) / 255,
+                parseInt(colorHEX.substr(4, 2), 16) / 255,
+            ];
+
+            for (const vertex of this.#makeTrianglesFromHexagon(hexagon)) {
+                this.triangles.push(...vertex);
+            }
+
+            // triangles.push(...this.#makeTrianglesFromHexagon(hexagon));
+            for (let i = 0; i < 6 * 3; i++) {
+                this.colors.push(...color);
+            }
+        }
+
+        const trianglesBuffer = gl.createBuffer();
+        gl.bindBuffer(gl.ARRAY_BUFFER, trianglesBuffer);
+        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(this.triangles), gl.STATIC_DRAW);
+        gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 0, 0);
+        gl.enableVertexAttribArray(0);
+
+        const colorBuffer = gl.createBuffer();
+        gl.bindBuffer(gl.ARRAY_BUFFER, colorBuffer);
+        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(this.colors), gl.STATIC_DRAW);
+        gl.vertexAttribPointer(1, 3, gl.FLOAT, false, 0, 0);
+        gl.enableVertexAttribArray(1);
+
+
+        console.log(`Triangles count: ${trianglesCounter}`);
+        console.timeEnd('CALC');
     }  
 
     #populateGroup(hexagon, lastHexagonGroupId) {
@@ -188,34 +233,49 @@ export class WorldMap {
         console.info('MapGenerationStart');
         console.time('MapGenerationTook');
 
-        if (current === null) {
-            current = new Hexagon(0, 0, 0);
-            this.#hexagons.set(current.hashCode(), current);
-            this.#setHexagonProperty(current, Hexagon.PROPERTIES.COLOR, this.#cryptoRandomRange(0, WorldMap.#COLORS.length - 1));
-        }
+        current = new Hexagon(0, 0, 0);
+        this.#hexagons.set(current.hashCode(), current);
+        this.#setHexagonProperty(current, Hexagon.PROPERTIES.COLOR, this.#cryptoRandomRange(0, WorldMap.#COLORS.length - 1));
 
-        let progress = 0;
-        const generateNext = current => current.neighbor(this.#cryptoRandomRange(0, allowIslands ? 11 : 5));
-        const addNext = generated => {
-            this.#hexagons.set(generated.hashCode(), generated);
-            this.#setHexagonProperty(generated, Hexagon.PROPERTIES.COLOR, this.#cryptoRandomRange(0, WorldMap.#COLORS.length - 1));
-            return generated;
-        };
-
-        while (this.#hexagons.size < count) {
-
-            let step = 0;
-            while (lessLakes && this.#hexagons.size < count && step++ <= 5) {
-                addNext(generateNext(current));
-            }
-
-            current = addNext(generateNext(current, true));
-
-            if (progress !== this.#hexagons.size) {
-                progress = this.#hexagons.size;
-                yield {p: progress, t: count};
+        for (let q = 0; q <= 1_200; q++) {
+            for (let r = 0; r <= 1_200 - q; r++) {
+                const generated = new Hexagon(q, r);
+                this.#hexagons.set(generated.hashCode(), generated);
+                this.#setHexagonProperty(generated, Hexagon.PROPERTIES.COLOR, this.#cryptoRandomRange(0, WorldMap.#COLORS.length - 1));
             }
         }
+
+        // yield {p:1,t:1};
+        
+
+        // if (current === null) {
+        //     current = new Hexagon(0, 0, 0);
+        //     this.#hexagons.set(current.hashCode(), current);
+        //     this.#setHexagonProperty(current, Hexagon.PROPERTIES.COLOR, this.#cryptoRandomRange(0, WorldMap.#COLORS.length - 1));
+        // }
+
+        // let progress = 0;
+        // const generateNext = current => current.neighbor(this.#cryptoRandomRange(0, allowIslands ? 11 : 5));
+        // const addNext = generated => {
+        //     this.#hexagons.set(generated.hashCode(), generated);
+        //     this.#setHexagonProperty(generated, Hexagon.PROPERTIES.COLOR, this.#cryptoRandomRange(0, WorldMap.#COLORS.length - 1));
+        //     return generated;
+        // };
+
+        // while (this.#hexagons.size < count) {
+
+        //     let step = 0;
+        //     while (lessLakes && this.#hexagons.size < count && step++ <= 5) {
+        //         addNext(generateNext(current));
+        //     }
+
+        //     current = addNext(generateNext(current, true));
+
+        //     if (progress !== this.#hexagons.size) {
+        //         progress = this.#hexagons.size;
+        //         yield {p: progress, t: count};
+        //     }
+        // }
 
         console.timeEnd('MapGenerationTook');
     }
@@ -280,6 +340,9 @@ export class WorldMap {
         }
     };
 
+    triangles = [];
+    colors = [];
+
     /**
      * Draws map onto canvas
      * @param {OffscreenCanvas} canvas 
@@ -287,50 +350,21 @@ export class WorldMap {
      */
     async draw(canvas, gl) {
         // Webgl
-        console.time('CALC');
-        const triangles = [];
-        const colors = [];
-        let trianglesCounter = 0;
-        for (const hexagon of this.onScreenHexagons()) {
-            trianglesCounter += 6;
-
-            const colorHEX = WorldMap.#COLORS[this.#getHexagonProperty(hexagon, Hexagon.PROPERTIES.COLOR)].substr(1);
-            const color = [
-                parseInt(colorHEX.substr(0, 2), 16) / 255,
-                parseInt(colorHEX.substr(2, 2), 16) / 255,
-                parseInt(colorHEX.substr(4, 2), 16) / 255,
-            ];
-
-            for (const vertex of this.#makeTrianglesFromHexagon(hexagon)) {
-                triangles.push(...vertex);
-            }
-
-            // triangles.push(...this.#makeTrianglesFromHexagon(hexagon));
-            for (let i = 0; i < 6 * 3; i++) {
-                colors.push(...color);
-            }
-        }
-
-        console.timeEnd('CALC');
         console.time('DRAW');
 
-        const trianglesBuffer = gl.createBuffer();
-        gl.bindBuffer(gl.ARRAY_BUFFER, trianglesBuffer);
-        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(triangles), gl.STATIC_DRAW);
-        gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 0, 0);
-        gl.enableVertexAttribArray(0);
+        const translationLocation = gl.getUniformLocation(this.#program, "u_translation");
+        // Set the translation.
+        gl.uniform2fv(translationLocation, [...this.transform]);
 
-        const colorBuffer = gl.createBuffer();
-        gl.bindBuffer(gl.ARRAY_BUFFER, colorBuffer);
-        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(colors), gl.STATIC_DRAW);
-        gl.vertexAttribPointer(1, 3, gl.FLOAT, false, 0, 0);
-        gl.enableVertexAttribArray(1);
+        const scaleLocation = gl.getUniformLocation(this.#program, "u_scale");
+        gl.uniform2fv(scaleLocation, [this.#zoom, this.#zoom]);
 
+        
         gl.clear(gl.COLOR_BUFFER_BIT);
-        gl.drawArrays(gl.TRIANGLES, 0, triangles.length / 2);
+        gl.drawArrays(gl.TRIANGLES, 0, this.triangles.length / 2);
         
         console.timeEnd('DRAW');
-        console.log(`Triangles count: ${trianglesCounter}`);
+
 
         return;
 
