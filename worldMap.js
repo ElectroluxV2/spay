@@ -32,7 +32,7 @@ export class WorldMap {
     #lastHexagonGroupId;
     #centerHexagon;
 
-    #colorUniformLocation;
+    #program;
 
     /**
      * @param {Point} origin
@@ -44,101 +44,70 @@ export class WorldMap {
         this.#hexagons = new Map();
         this.#hexagonsProperties = new Map();
 
-        const vertexShaderSource = `#version 300 es
+        const vertexShaderSource =
+            `#version 300 es
 
-        // an attribute is an input (in) to a vertex shader.
-        // It will receive data from a buffer
-        in vec2 a_position;
-        
-        // Used to pass in the resolution of the canvas
-        uniform vec2 u_resolution;
-        
-        // all shaders have a main function
-        void main() {
-        
-          // convert the position from pixels to 0.0 to 1.0
-          vec2 zeroToOne = a_position / u_resolution;
-        
-          // convert from 0->1 to 0->2
-          vec2 zeroToTwo = zeroToOne * 2.0;
-        
-          // convert from 0->2 to -1->+1 (clipspace)
-          vec2 clipSpace = zeroToTwo - 1.0;
-        
-          gl_Position = vec4(clipSpace * vec2(1, -1), 0, 1);
-        }
-        `;
-        
-        const fragmentShaderSource = `#version 300 es
+            layout (location=0) in vec2 a_position;
+            layout (location=1) in vec3 color;
 
-        precision mediump float;
+            uniform vec2 u_resolution;
+            out vec3 vColor;
+      
+            void main() {
+                vec2 zeroToOne = a_position / u_resolution;
+                vec2 zeroToTwo = zeroToOne * 2.0;
+                vec2 clipSpace = zeroToTwo - 1.0;
+            
+                gl_Position = vec4(clipSpace * vec2(1, -1), 0, 1);
+                vColor = color;
+            }`;
         
-        uniform vec4 u_color;
-        
-        // we need to declare an output for the fragment shader
-        out vec4 outColor;
-        
-        void main() {
-          outColor = u_color;
-        }
-        `;
+        const fragmentShaderSource = 
+            `#version 300 es
+            precision highp float;
+      
+            in vec3 vColor;
+            out vec4 fragColor;
+      
+            void main() {
+              fragColor = vec4(vColor, 1.0);
+            }`;
 
         console.log(gl);
 
-        const vertexShader = this.#createShader(gl, gl.VERTEX_SHADER, vertexShaderSource);
-        const fragmentShader = this.#createShader(gl, gl.FRAGMENT_SHADER, fragmentShaderSource);
-        const program = this.#createProgram(gl, vertexShader, fragmentShader);
-        const positionAttributeLocation = gl.getAttribLocation(program, 'a_position');
-        const resolutionUniformLocation = gl.getUniformLocation(program, 'u_resolution');
-        this.#colorUniformLocation = gl.getUniformLocation(program, 'u_color');
+        // Set background to solid grey
+        gl.clearColor(0.25, 0.25, 0.25, 1);
 
-        const positionBuffer = gl.createBuffer();
-        const vertexArrayObject = gl.createVertexArray();
+        // Compile shaders
+        const vertexShader = gl.createShader(gl.VERTEX_SHADER);
+        gl.shaderSource(vertexShader, vertexShaderSource);
+        gl.compileShader(vertexShader);
+        if (!gl.getShaderParameter(vertexShader, gl.COMPILE_STATUS)) {
+            console.error(gl.getShaderInfoLog(vertexShader));
+        }
+ 
+        const fragmentShader = gl.createShader(gl.FRAGMENT_SHADER);
+        gl.shaderSource(fragmentShader, fragmentShaderSource);
+        gl.compileShader(fragmentShader);
+        if (!gl.getShaderParameter(fragmentShader, gl.COMPILE_STATUS)) {
+            console.error(gl.getShaderInfoLog(fragmentShader));
+        }
 
-        gl.bindVertexArray(vertexArrayObject);
-        gl.enableVertexAttribArray(positionAttributeLocation);
-        gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
-        gl.vertexAttribPointer(positionAttributeLocation, 2, gl.FLOAT, false, 0, 0);
-        gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
+        // Link shaders to WebGL program
+        this.#program = gl.createProgram();
+        gl.attachShader(this.#program, vertexShader);
+        gl.attachShader(this.#program, fragmentShader);
+        gl.linkProgram(this.#program);
+        if (!gl.getProgramParameter(this.#program, gl.LINK_STATUS)) {
+            console.error(gl.getProgramInfoLog(this.#program));
+        }
 
-        gl.useProgram(program);
-        gl.bindVertexArray(vertexArrayObject);
+        // Finally, activate WebGL program
+        gl.useProgram(this.#program);
+
+        // Remember to update
+        const resolutionUniformLocation = gl.getUniformLocation(this.#program, "u_resolution");
         gl.uniform2f(resolutionUniformLocation, gl.canvas.width, gl.canvas.height);
-    }
-
-    #createShader(gl, type, source) {
-        const shader = gl.createShader(type);
-
-        gl.shaderSource(shader, source);
-        gl.compileShader(shader);
-
-        const success = gl.getShaderParameter(shader, gl.COMPILE_STATUS);
-
-        if (success) {
-            return shader;
-        }
-        
-        const log = gl.getShaderInfoLog(shader);
-        gl.deleteShader(shader);
-        console.error(log);
-    }
-
-    #createProgram(gl, vertexShader, fragmentShader) {
-        const program = gl.createProgram();
-
-        gl.attachShader(program, vertexShader);
-        gl.attachShader(program, fragmentShader);
-        gl.linkProgram(program);
-
-        const success = gl.getProgramParameter(program, gl.LINK_STATUS);
-
-        if (success) {
-          return program;
-        }
-       
-        const log = gl.getProgramInfoLog(program);
-        gl.deleteProgram(program);
-        console.error(log);
     }
 
     #setHexagonProperty(hexagon, property, value) {
@@ -158,7 +127,7 @@ export class WorldMap {
     }
 
     async *generate() {
-        yield* this.#generatorV4(null, 1_000, true, false);
+        yield* this.#generatorV4(null, 1_0_000, true, false);
 
         this.#makeGroups();
 
@@ -300,18 +269,15 @@ export class WorldMap {
         return paths;
     }
 
-    #makeTrianglesFromHExagon = hexagon => {
+    *#makeTrianglesFromHexagon(hexagon) {
         const hexagonCorners = this.#layout.hexagonCorners(hexagon);
         const hexagonCenter = this.#layout.hexToPixel(hexagon);
 
-        const triangles = new Float32Array(18 * 3);
-
         for (let i = 0; i < 6; i++) {
-            triangles.set([...hexagonCenter], i * 6);
-            triangles.set([...hexagonCorners[i]], i * 6 + 2);
-            triangles.set([...hexagonCorners[(i + 1) % 6]], i * 6 + 4);
+            yield (hexagonCenter);
+            yield (hexagonCorners[i]);
+            yield (hexagonCorners[(i + 1) % 6]);
         }
-        return triangles;
     };
 
     /**
@@ -320,53 +286,13 @@ export class WorldMap {
      * @param {WebGL2RenderingContext} context 
      */
     async draw(canvas, gl) {
-
-        // context.fillStyle = '#FFFFFF80';
-        // context.strokeStyle = '#FF0000';
-        // context.lineWidth = 2;
-
-        // const hexagon = new Hexagon(0, 0);
-        // const hexagon2 = new Hexagon(0, 1);
-       
-        // const borderCorners = [];
-
-        // for (const hexagonCorner of hexagonCorners) {
-        //     borderCorners.push(this.#layout.borderCorner(hexagonCorner, hexagonCenter));
-        // }
-
-        // // Hexagon body
-        // context.beginPath();
-        // context.moveTo(...hexagonCorners[0]);
-        // for (let i = 1; i < hexagonCorners.length; i++) {
-        //     context.lineTo(...hexagonCorners[i]);
-        // }
-        // context.closePath();
-        // context.fill();
-
-        // Triangle
-
-        // context.beginPath();
-        // context.moveTo(...hexagonCenter);
-        // context.lineTo(...hexagonCorners[0]);
-        // context.lineTo(...hexagonCorners[1]);
-        // context.closePath();
-        // context.stroke();
-
         // Webgl
-        console.time('DRAW');
-        let vertexCount = 0;
-
-        const drawHexagon = (triangles, color) => {
-            gl.bufferData(gl.ARRAY_BUFFER, triangles, gl.STATIC_DRAW);
-            
-            // Set a random color.
-            gl.uniform4f(this.#colorUniformLocation, ...color, 1);
-            gl.drawArrays(gl.TRIANGLES, 0, 18);
-        };
-
-        let vertexCounter = 0;
+        console.time('CALC');
+        const triangles = [];
+        const colors = [];
+        let trianglesCounter = 0;
         for (const hexagon of this.onScreenHexagons()) {
-            vertexCounter += 6;
+            trianglesCounter += 6;
 
             const colorHEX = WorldMap.#COLORS[this.#getHexagonProperty(hexagon, Hexagon.PROPERTIES.COLOR)].substr(1);
             const color = [
@@ -375,58 +301,36 @@ export class WorldMap {
                 parseInt(colorHEX.substr(4, 2), 16) / 255,
             ];
 
-            drawHexagon(this.#makeTrianglesFromHExagon(hexagon), color);
+            for (const vertex of this.#makeTrianglesFromHexagon(hexagon)) {
+                triangles.push(...vertex);
+            }
+
+            // triangles.push(...this.#makeTrianglesFromHexagon(hexagon));
+            for (let i = 0; i < 6 * 3; i++) {
+                colors.push(...color);
+            }
         }
+
+        console.timeEnd('CALC');
+        console.time('DRAW');
+
+        const trianglesBuffer = gl.createBuffer();
+        gl.bindBuffer(gl.ARRAY_BUFFER, trianglesBuffer);
+        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(triangles), gl.STATIC_DRAW);
+        gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 0, 0);
+        gl.enableVertexAttribArray(0);
+
+        const colorBuffer = gl.createBuffer();
+        gl.bindBuffer(gl.ARRAY_BUFFER, colorBuffer);
+        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(colors), gl.STATIC_DRAW);
+        gl.vertexAttribPointer(1, 3, gl.FLOAT, false, 0, 0);
+        gl.enableVertexAttribArray(1);
+
+        gl.clear(gl.COLOR_BUFFER_BIT);
+        gl.drawArrays(gl.TRIANGLES, 0, triangles.length / 2);
         
         console.timeEnd('DRAW');
-        console.log(`Vertex count: ${vertexCounter}`);
-
-        // drawHexagon(makeTrianglesFromHExagon(hexagon));
-        // drawHexagon(makeTrianglesFromHExagon(hexagon2));
-
-        // const tr = new Float32Array([
-        //     ...hexagonCenter,
-        //     ...hexagonCorners[0],
-        //     ...hexagonCorners[1],
-
-        //     ...hexagonCenter,
-        //     ...hexagonCorners[1],
-        //     ...hexagonCorners[2],
-
-        //     ...hexagonCenter,
-        //     ...hexagonCorners[2],
-        //     ...hexagonCorners[3],
-
-        //     ...hexagonCenter,
-        //     ...hexagonCorners[3],
-        //     ...hexagonCorners[4],
-
-        //     ...hexagonCenter,
-        //     ...hexagonCorners[4],
-        //     ...hexagonCorners[5],
-
-        //     ...hexagonCenter,
-        //     ...hexagonCorners[5],
-        //     ...hexagonCorners[0],
-        // ]);
-
-        // context.fillStyle = 'pink';
-        // context.fillRect(...v1.multiply(0.99), 2, 2);
-
-        // const h2 = h1.neighbor(1);
-        // const c2 = this.#layout.hexagonCorners(h2);
-        // const center2 = this.#layout.hexToPixel(h1);
-
-        // context.beginPath();
-        // context.moveTo(...c2[0]);
-
-        // for (let i = 1; i < c2.length; i++) {
-        //     context.lineTo(...c2[i]);
-        // }
-
-        // context.closePath();
-        // // context.stroke();
-        // context.fill();
+        console.log(`Triangles count: ${trianglesCounter}`);
 
         return;
 
