@@ -158,7 +158,7 @@ export class WorldMap {
     }
 
     async *generate() {
-        yield* this.#generatorV4(null, 1000, true, false);
+        yield* this.#generatorV4(null, 1_000, true, false);
 
         this.#makeGroups();
 
@@ -300,6 +300,20 @@ export class WorldMap {
         return paths;
     }
 
+    #makeTrianglesFromHExagon = hexagon => {
+        const hexagonCorners = this.#layout.hexagonCorners(hexagon);
+        const hexagonCenter = this.#layout.hexToPixel(hexagon);
+
+        const triangles = new Float32Array(18 * 3);
+
+        for (let i = 0; i < 6; i++) {
+            triangles.set([...hexagonCenter], i * 6);
+            triangles.set([...hexagonCorners[i]], i * 6 + 2);
+            triangles.set([...hexagonCorners[(i + 1) % 6]], i * 6 + 4);
+        }
+        return triangles;
+    };
+
     /**
      * Draws map onto canvas
      * @param {OffscreenCanvas} canvas 
@@ -339,21 +353,8 @@ export class WorldMap {
         // context.stroke();
 
         // Webgl
-
-        const makeTrianglesFromHExagon = hexagon => {
-            const hexagonCorners = this.#layout.hexagonCorners(hexagon);
-            const hexagonCenter = this.#layout.hexToPixel(hexagon);
-
-            const triangles = new Float32Array(18 * 3);
-
-            for (let i = 0; i < 6; i++) {
-                triangles.set([...hexagonCenter], i * 6);
-                triangles.set([...hexagonCorners[i]], i * 6 + 2);
-                triangles.set([...hexagonCorners[(i + 1) % 6]], i * 6 + 4);
-            }
-
-            return triangles;
-        };
+        console.time('DRAW');
+        let vertexCount = 0;
 
         const drawHexagon = (triangles, color) => {
             gl.bufferData(gl.ARRAY_BUFFER, triangles, gl.STATIC_DRAW);
@@ -363,7 +364,10 @@ export class WorldMap {
             gl.drawArrays(gl.TRIANGLES, 0, 18);
         };
 
+        let vertexCounter = 0;
         for (const hexagon of this.onScreenHexagons()) {
+            vertexCounter += 6;
+
             const colorHEX = WorldMap.#COLORS[this.#getHexagonProperty(hexagon, Hexagon.PROPERTIES.COLOR)].substr(1);
             const color = [
                 parseInt(colorHEX.substr(0, 2), 16) / 255,
@@ -371,8 +375,11 @@ export class WorldMap {
                 parseInt(colorHEX.substr(4, 2), 16) / 255,
             ];
 
-            drawHexagon(makeTrianglesFromHExagon(hexagon), color);
+            drawHexagon(this.#makeTrianglesFromHExagon(hexagon), color);
         }
+        
+        console.timeEnd('DRAW');
+        console.log(`Vertex count: ${vertexCounter}`);
 
         // drawHexagon(makeTrianglesFromHExagon(hexagon));
         // drawHexagon(makeTrianglesFromHExagon(hexagon2));
