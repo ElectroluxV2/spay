@@ -1,5 +1,6 @@
 import { Point } from './point.js';
 import { ProgressBar } from './progressBar.js';
+import { Renderer } from './renderer.js';
 import { WorldMap } from './worldMap.js';
 
 export class Game {
@@ -9,6 +10,8 @@ export class Game {
     #window;
     #animationFrameId;
     #thresholdFrameUpdateTimer;
+
+    #renderer;
 
     #worldMap;
     #waterPattern;
@@ -34,45 +37,55 @@ export class Game {
         this.#mainCanvasGL.clearColor(0, 0, 0, 1);
         this.#mainCanvasGL.clear(this.#mainCanvasGL.COLOR_BUFFER_BIT | this.#mainCanvasGL.DEPTH_BUFFER_BIT);
 
+        this.#renderer = new Renderer(this.#mainCanvasGL);
+
         this.#loadLevel().then(this.#singleFrameUpdate.bind(this));
     }
 
     async #loadLevel() {
-        const progressBar = new ProgressBar({x: (this.#window.innerWidth / 2) - (this.#window.innerWidth / 3 / 2), y: (this.#window.innerHeight / 2), width: this.#window.innerWidth / 3, height: 64}, '#989fce', 0);
         const center = new Point(this.#window.innerWidth, this.#window.innerHeight);
-
         this.#worldMap = new WorldMap(center, this.#window, this.#mainCanvasGL);
 
-        let lastProgress = 0;
-        const updateProgress = async (progress, text) => {
-            if (Math.trunc((progress * 100)) <= lastProgress) return;
-
-            // this.#mainCanvasContext.fillStyle = '#272838';
-            // this.#mainCanvasContext.fillRect(0, 0, ...center);
-            // progressBar.draw(this.#mainCanvasContext, progress);
-            
-            // const textSize = this.#mainCanvasContext.measureText(text);
-            // this.#mainCanvasContext.fillStyle = '#7D6B91';
-            // this.#mainCanvasContext.font = 'bold 16px Arial';
-            // this.#mainCanvasContext.fillText(text,  (this.#window.innerWidth / 2) - (textSize.width / 2), (this.#window.innerHeight / 2) + 80 + textSize.actualBoundingBoxDescent);
-
-            lastProgress = Math.trunc((progress * 100));
-
-            await new Promise(resolve => {
-                setTimeout(resolve, 0)
-            });
+        for await (const {p, t} of this.#worldMap.generate(1000)) {
+            console.log(`Generating map. ${p} / ${t}`);
         }
 
-        updateProgress(0);
+        console.log('CALCULATE HEXAGONS DATA START');
+        console.time('CALCULATE HEXAGONS DATA TOOK');
+        // Calculate triangles and set colors for renderer
+        const vertices = new Float32Array(this.#worldMap.hexagonSize * 6 * 3 * 2); // 6 times triangle, 3 times vertex, 2 times coord
+        const colors = new Float32Array(this.#worldMap.hexagonSize * 6 * 3 * 3); // 6 times triangle, 3 times vertex, 3 times color (gradient)
 
-        const result = await fetch('./background_water.png');
-        const blob = await result.blob();
-        const image = await createImageBitmap(blob);
-        // this.#waterPattern = this.#mainCanvasContext.createPattern(image, 'repeat');
+        let vertexIndex = 0;
+        let colorIndex = 0;
+        for (const hexagon of this.#worldMap.hexagons) {
+            // Triangles
+            for (const triangle of this.#worldMap.getTrianglesFromHexagon(hexagon)) {
+                for (const vertex of triangle) {
+                    vertices.set(vertex, vertexIndex);
+                    vertexIndex += 2;
+                }
+            }
 
-        for await (const {p, t} of this.#worldMap.generate(this.#mainCanvasGL)) {
-            await updateProgress(p / t, `Generating map. ${p} / ${t}`);
+            // Color
+            const colorHEX = this.#worldMap.getHexagonColor(hexagon);
+            const colorRGB = [
+                parseInt(colorHEX.substr(0, 2), 16) / 255,
+                parseInt(colorHEX.substr(2, 2), 16) / 255,
+                parseInt(colorHEX.substr(4, 2), 16) / 255,
+            ];
+
+            // 6 times triangle, don't want gradient
+            for (let i = 0; i < 6 * 3; i++) {
+                colors.set(colorRGB, colorIndex);
+                colorIndex += 3;
+            }
         }
+
+        this.#renderer.vertices = vertices;
+        this.#renderer.colors = colors;
+
+        console.timeEnd('CALCULATE HEXAGONS DATA TOOK');
     }
 
     #startFrameUpdate() {
@@ -135,8 +148,8 @@ export class Game {
             const dx = this.#dragStart.x - pointer.x;
             const dy = this.#dragStart.y - pointer.y;
 
-            this.#worldMap.transform.x -= dx;
-            this.#worldMap.transform.y -= dy;
+            this.#renderer.transform.x -= dx;
+            this.#renderer.transform.y -= dy;
 
             this.#dragStart.x -= dx;
             this.#dragStart.y -= dy;
@@ -145,43 +158,22 @@ export class Game {
         }
 
 
-        this.#selectedHexagon = this.#worldMap.layout.pixelToHex(pointer);
+        // this.#selectedHexagon = this.#worldMap.layout.pixelToHex(pointer);
     }
 
     /**
      * @param {WheelEvent} WheelEvent 
      */
     onWheel(deltaX, deltaY) {
-        this.#worldMap.zoom += -Math.sign(deltaY) * 0.1;
-        this.#worldMap.layout.size.x = this.#worldMap.layout.size.y = this.#worldMap.zoom;
+        const change = -Math.sign(deltaY) * 0.1;
+        
+        this.#renderer.scale.x += change;
+        this.#renderer.scale.y += change;
 
         this.#thresholdFrameUpdate();
     }
 
     #drawSingleFrame() {
-        // this.#mainCanvasContext.fillStyle = '#7FDBFF';
-        // this.#mainCanvasContext.reset();
-        // this.#mainCanvasContext.fillStyle = this.#waterPattern;
-        // this.#mainCanvasContext.fillRect(0, 0, this.#mainCanvas.width, this.#mainCanvas.height);
-
-        
-        this.#mainCanvasGL.clearColor(0, 0, 0, 1);
-        this.#mainCanvasGL.clear(this.#mainCanvasGL.COLOR_BUFFER_BIT);
-        this.#worldMap.draw(this.#mainCanvas, this.#mainCanvasGL);
+        this.#renderer.draw();
     }
-
-    
-    // loop() {
-    //     // this.#mainCanvasContext.reset();
-    //     this.#mainCanvasContext.fillStyle = '#7FDBFF';
-    //     this.#mainCanvasContext.fillRect(0, 0, this.#mainCanvas.width, this.#mainCanvas.height);
-
-    //     this.#worldMap.draw(this.#mainCanvasContext, this.#mainCanvasContext);
-    
-    //     // this.#mainCanvasContext.fillStyle = '#00000010';
-    //     // this.#mainCanvasContext.strokeStyle = '#00000010';
-    //     // this.#selectedHexagon && this.#drawHexagon(this.#selectedHexagon);
-
-    //     requestAnimationFrame(this.loop.bind(this));
-    // }
 }
