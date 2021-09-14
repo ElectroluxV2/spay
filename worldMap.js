@@ -26,12 +26,14 @@ export class WorldMap {
     #hexagonsProperties; // This cannot contain WeakMaps due to fact that Hexagon is different every time, only hashCode is same.
     #lastHexagonGroupId;
     #centerHexagon;
+    #window;
 
     /**
-     * @param {Point} origin
+     * 
      */
-    constructor(origin) {
-        this.#layout = new Layout(Orientation.FLAT, WorldMap.#HEXAGON_SIZE, origin);
+    constructor(window) {
+        this.#window = window;
+        this.#layout = new Layout(Orientation.FLAT, WorldMap.#HEXAGON_SIZE, new Point(window.innerWidth / 2, window.innerHeight / 2));
         this.#hexagons = new Map();
         this.#hexagonsProperties = new Map();
     }
@@ -58,7 +60,7 @@ export class WorldMap {
         this.#makeGroups();
 
         // TODO: FIXME: Map is not always in center
-        this.#layout.origin = this.#layout.hexToPixel(this.centerHexagon).multiply(0.5);
+        // this.#layout.origin = this.#layout.hexToPixel(this.centerHexagon).multiply(0.5);
     }  
 
     #populateGroup(hexagon, lastHexagonGroupId) {

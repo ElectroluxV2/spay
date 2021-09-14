@@ -23,7 +23,7 @@ export class Renderer {
         this.#gl = gl;
         this.#load();
 
-        this.#scale = new Point(0.5, 0.5);
+        this.#scale = new Point(1, 1);
         this.#transform = new Point(0, 0);
     }
 

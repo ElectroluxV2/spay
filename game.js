@@ -43,10 +43,9 @@ export class Game {
     }
 
     async #loadLevel() {
-        const center = new Point(this.#window.innerWidth, this.#window.innerHeight);
-        this.#worldMap = new WorldMap(center, this.#window, this.#mainCanvasGL);
+        this.#worldMap = new WorldMap(this.#window);
 
-        for await (const {p, t} of this.#worldMap.generate(1000)) {
+        for await (const {p, t} of this.#worldMap.generate(250000)) {
             console.log(`Generating map. ${p} / ${t}`);
         }
 
@@ -156,19 +155,18 @@ export class Game {
 
             return;
         }
-
-
-        // this.#selectedHexagon = this.#worldMap.layout.pixelToHex(pointer);
     }
+
+    #zoomFunction = x => Math.pow((x / 10) + 1, 2);
+    #currentZoom = 0;
 
     /**
      * @param {WheelEvent} WheelEvent 
      */
     onWheel(deltaX, deltaY) {
-        const change = -Math.sign(deltaY) * 0.1;
+        this.#currentZoom -= Math.sign(deltaY) * 0.1;
         
-        this.#renderer.scale.x += change;
-        this.#renderer.scale.y += change;
+        this.#renderer.scale.x = this.#renderer.scale.y = this.#zoomFunction(this.#currentZoom);
 
         this.#thresholdFrameUpdate();
     }
