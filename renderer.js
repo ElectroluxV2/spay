@@ -53,7 +53,7 @@ export class Renderer {
     }
 
     moveOriginToHexagon(hexagon) {
-        this.#layout.origin = this.hexagonToPixel(hexagon).multiply(-1);
+        this.#layout.origin = this.#layout.hexagonToPixelUntransformed(hexagon).multiply(-1);
     }
 
     /**
@@ -139,7 +139,6 @@ export class Renderer {
         const gl = this.#gl;
 
         gl.clearColor(...Renderer.#BACKGROUND_COLOR);
-
 
         // Compile shaders
         const vertexShader = gl.createShader(gl.VERTEX_SHADER);
@@ -247,6 +246,14 @@ export class Renderer {
         gl.drawArrays(gl.TRIANGLES, 0, this.#vertexCount);
         
         // console.timeEnd('DRAW');
+    }
+
+    get origin() {
+        return this.#layout.origin;
+    }
+
+    set origin(value) {
+        this.#layout.origin = value;
     }
 
     get transform() {

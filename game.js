@@ -18,6 +18,7 @@ export class Game {
 
     #drag;
     #dragStart;
+    #lastPointer;
 
     keyboardStates;
 
@@ -42,17 +43,11 @@ export class Game {
         this.#loadLevel().then(this.#singleFrameUpdate.bind(this));
     }
 
-    async #loadLevel() {
-        // World Size 
-        for await (const {p, t} of this.#worldMap.generate(2000)) {
-            console.log(`Generating map. ${p} / ${t}`);
-        }
-
+    #calculateDataForRenderer() {
         console.log('CALCULATE HEXAGONS DATA START');
         console.time('CALCULATE HEXAGONS DATA TOOK');
 
         // Set map center as layout origin
-        this.#renderer.moveOriginToHexagon(this.#worldMap.centerHexagon);
 
         // Calculate triangles and set colors for renderer
         const vertices = new Float32Array(this.#worldMap.hexagonSize * 6 * 3 * 2); // 6 times triangle, 3 times vertex, 2 times coord
@@ -91,6 +86,16 @@ export class Game {
         this.#renderer.offset.y = this.#window.innerHeight / 2;
 
         console.timeEnd('CALCULATE HEXAGONS DATA TOOK');
+    }
+
+    async #loadLevel() {
+        // World Size 
+        for await (const {p, t} of this.#worldMap.generate(2000)) {
+            console.log(`Generating map. ${p} / ${t}`);
+        }
+
+        this.#renderer.moveOriginToHexagon(this.#worldMap.centerHexagon);
+        this.#calculateDataForRenderer();
     }
 
     #startFrameUpdate() {
@@ -137,7 +142,7 @@ export class Game {
     onPointerUp(pageX, pageY) {
         this.#drag = false;
 
-        this.#stopFrameUpdate();
+        // this.#stopFrameUpdate();
     }
 
     /**
@@ -166,9 +171,9 @@ export class Game {
 
             this.#dragStart.x -= dx;
             this.#dragStart.y -= dy;
-
-            return;
         }
+
+        this.#lastPointer = pointer;
     }
 
     /**
@@ -176,10 +181,36 @@ export class Game {
      */
     onWheel(deltaX, deltaY) {
         this.#renderer.zoom -= Math.sign(deltaY) * 0.1;
-        this.#thresholdFrameUpdate();
+        // this.#thresholdFrameUpdate();
+    }
+
+    #onFrameUpdate() {
+        const last = new Point(...this.#renderer.origin);
+
+        if (this.keyboardStates['w'] || this.keyboardStates['W']) {
+           this.#renderer.origin.y += 1;
+        }
+
+        if (this.keyboardStates['s'] || this.keyboardStates['S']) {
+            this.#renderer.origin.y -= 1;
+        }
+
+        if (this.keyboardStates['a'] || this.keyboardStates['A']) {
+            this.#renderer.origin.x += 1;
+        }
+
+        if (this.keyboardStates['d'] || this.keyboardStates['D']) {
+            this.#renderer.origin.x -= 1;
+        }
+
+        if (last.x === this.#renderer.origin.x && last.y === this.#renderer.origin.y) return;
+
+        console.log('UPDATE');
+        this.#calculateDataForRenderer();
     }
 
     #drawSingleFrame() {
+        this.#onFrameUpdate();
         this.#renderer.draw();
     }
 }
