@@ -50,6 +50,10 @@ export class Game {
 
         console.log('CALCULATE HEXAGONS DATA START');
         console.time('CALCULATE HEXAGONS DATA TOOK');
+
+        // Set map center as layout origin
+        this.#renderer.moveOriginToHexagon(this.#worldMap.centerHexagon);
+
         // Calculate triangles and set colors for renderer
         const vertices = new Float32Array(this.#worldMap.hexagonSize * 6 * 3 * 2); // 6 times triangle, 3 times vertex, 2 times coord
         const colors = new Float32Array(this.#worldMap.hexagonSize * 6 * 3 * 3); // 6 times triangle, 3 times vertex, 3 times color (gradient)
@@ -143,7 +147,6 @@ export class Game {
      */
     onPointerMove(pageX, pageY) {
         const pointer = new Point(pageX.toFixed(0), pageY.toFixed(0));
-
 
         if (this.#drag) {
 

@@ -52,6 +52,10 @@ export class Renderer {
         return hexagonCenter.add(new Point(hexagonCorner.x - hexagonCenter.x, hexagonCorner.y - hexagonCenter.y).multiply(widthMultiplier));
     }
 
+    moveOriginToHexagon(hexagon) {
+        this.#layout.origin = this.hexagonToPixel(hexagon).multiply(-1);
+    }
+
     /**
      * Converts hexagon to hexagon's center on screen
      * @param {Hexagon} hexagon
