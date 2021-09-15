@@ -38,13 +38,12 @@ export class Game {
         this.#mainCanvasGL.clear(this.#mainCanvasGL.COLOR_BUFFER_BIT | this.#mainCanvasGL.DEPTH_BUFFER_BIT);
 
         this.#renderer = new Renderer(this.#mainCanvasGL);
+        this.#worldMap = new WorldMap();
 
         this.#loadLevel().then(this.#singleFrameUpdate.bind(this));
     }
 
     async #loadLevel() {
-        this.#worldMap = new WorldMap(this.#window);
-
         // World Size 
         for await (const {p, t} of this.#worldMap.generate(2000)) {
             console.log(`Generating map. ${p} / ${t}`);
@@ -60,7 +59,7 @@ export class Game {
         let colorIndex = 0;
         for (const hexagon of this.#worldMap.hexagons) {
             // Triangles
-            for (const triangle of this.#worldMap.getTrianglesFromHexagon(hexagon)) {
+            for (const triangle of this.#renderer.getTrianglesFromHexagon(hexagon)) {
                 for (const vertex of triangle) {
                     vertices.set(vertex, vertexIndex);
                     vertexIndex += 2;

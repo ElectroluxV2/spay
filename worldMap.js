@@ -1,15 +1,12 @@
 import { Hexagon } from './hexagon.js';
 import { Point } from './point.js';
-import { Layout } from './layout.js';
-import { Orientation } from './orientation.js';
 export class WorldMap {
-    static #HEXAGON_SIZE = new Point(20, 20);
     static #COLORS = [
         '#DDDDDD',
         '#001f3f',
-        // '#0074D9',
-        // '#7FDBFF',
-        // '#39CCCC',
+        '#0074D9',
+        '#7FDBFF',
+        '#39CCCC',
         // '#85144b',
         // '#B10DC9',
         // '#F012BE',
@@ -21,19 +18,15 @@ export class WorldMap {
         // '#01FF70'
     ];
 
-    #layout;
     #hexagons;
     #hexagonsProperties; // This cannot contain WeakMaps due to fact that Hexagon is different every time, only hashCode is same.
     #lastHexagonGroupId;
     #centerHexagon;
-    #window;
 
     /**
      * 
      */
-    constructor(window) {
-        this.#window = window;
-        this.#layout = new Layout(Orientation.FLAT, WorldMap.#HEXAGON_SIZE, new Point(0, 0 /*window.innerWidth / 2, window.innerHeight / 2*/));
+    constructor() {
         this.#hexagons = new Map();
         this.#hexagonsProperties = new Map();
     }
@@ -58,9 +51,6 @@ export class WorldMap {
         yield* this.#generatorV4(null, hexagonCount, lessLakes, allowIslands);
 
         this.#makeGroups();
-
-        // TODO: FIXME: Map is not always in center
-        // this.#layout.origin = this.#layout.hexToPixel(this.centerHexagon);
     }  
 
     #populateGroup(hexagon, lastHexagonGroupId) {
@@ -162,7 +152,7 @@ export class WorldMap {
 
         const centerHexagon = this.centerHexagon;
         this.#hexagons.set(centerHexagon.hashCode(), centerHexagon);
-        this.#setHexagonProperty(centerHexagon, Hexagon.PROPERTIES.COLOR, 2);
+        this.#setHexagonProperty(centerHexagon, Hexagon.PROPERTIES.COLOR, WorldMap.#COLORS.length - 1);
 
         console.timeEnd('MAP GENERATION TOOK');
     }
@@ -186,15 +176,6 @@ export class WorldMap {
 
         return new Hexagon((max.x + min.x) / 2, (max.y + min.y) / 2);
     }
-
-    *getTrianglesFromHexagon(hexagon) {
-        const hexagonCorners = this.#layout.hexagonCorners(hexagon);
-        const hexagonCenter = this.#layout.hexToPixel(hexagon);
-
-        for (let i = 0; i < 6; i++) {
-            yield [(hexagonCenter), (hexagonCorners[i]), (hexagonCorners[(i + 1) % 6])];
-        }
-    };
 
     /**
      * @returns {Generator<Number>}
@@ -234,9 +215,5 @@ export class WorldMap {
 
     get hexagonSize() {
         return this.#hexagons.size;
-    }
-
-    get layout() {
-        return this.#layout;
     }
 }

@@ -1,6 +1,9 @@
 import { Point } from './point.js';
+import { Layout } from './layout.js';
+import { Orientation } from './orientation.js';
 
 export class Renderer {
+    static #HEXAGON_SIZE = new Point(20, 20);
     static #BACKGROUND_COLOR = [0.25, 0.25, 0.25, 1];
 
     #gl;
@@ -12,6 +15,7 @@ export class Renderer {
 
     #transform;
     #scale;
+    #layout;
 
     #vertexCount;
 
@@ -25,6 +29,7 @@ export class Renderer {
 
         this.#scale = new Point(1, 1);
         this.#transform = new Point(0, 0);
+        this.#layout = new Layout(Orientation.FLAT, Renderer.#HEXAGON_SIZE, new Point(0, 0 /*window.innerWidth / 2, window.innerHeight / 2*/));
     }
 
     async #load() {
@@ -119,6 +124,16 @@ export class Renderer {
         gl.uniform2f(this.#resolutionUniformLocation, gl.canvas.width, gl.canvas.height);
     }
 
+    *getTrianglesFromHexagon(hexagon) {
+        const hexagonCorners = this.#layout.hexagonCorners(hexagon);
+        const hexagonCenter = this.#layout.hexToPixel(hexagon);
+
+        for (let i = 0; i < 6; i++) {
+            yield [(hexagonCenter), (hexagonCorners[i]), (hexagonCorners[(i + 1) % 6])];
+        }
+    };
+
+
     onWindowResize() {
         this.#adjustResolution();
     }
@@ -183,5 +198,9 @@ export class Renderer {
 
     set scale(value) {
         this.#scale = value;
+    }
+
+    get layout() {
+        return this.#layout;
     }
 }
