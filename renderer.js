@@ -5,6 +5,8 @@ import { Orientation } from './orientation.js';
 export class Renderer {
     static #HEXAGON_SIZE = new Point(20, 20);
     static #BACKGROUND_COLOR = [0.25, 0.25, 0.25, 1];
+    static #MAXIMUM_ZOOM_ARGUMENT = 4;
+    static #MINIMUM_ZOOM_ARGUMENT = -8;
 
     #gl;
     #program;
@@ -17,6 +19,9 @@ export class Renderer {
     #offset;
     #scale;
     #layout;
+    #currentZoomArgument;
+
+    #zoomFunction = x => Math.pow((x / 10) + 1, 2);
 
     #vertexCount;
 
@@ -32,6 +37,7 @@ export class Renderer {
         this.#transform = new Point(0, 0);
         this.#offset = new Point(0, 0);
         this.#layout = new Layout(Orientation.FLAT, Renderer.#HEXAGON_SIZE, new Point(0, 0));
+        this.#currentZoomArgument = 0;
     }
 
     /**
@@ -264,5 +270,21 @@ export class Renderer {
 
     get layout() {
         return this.#layout;
+    }
+
+    get zoom() {
+        return this.#currentZoomArgument;
+    }
+
+    set zoom(value) {
+        if (value > Renderer.#MAXIMUM_ZOOM_ARGUMENT) {
+            this.#currentZoomArgument = Renderer.#MAXIMUM_ZOOM_ARGUMENT;
+        } else if (value < Renderer.#MINIMUM_ZOOM_ARGUMENT) {
+            this.#currentZoomArgument = Renderer.#MINIMUM_ZOOM_ARGUMENT;
+        } else {
+            this.#currentZoomArgument = value;
+        }
+
+        this.scale.x = this.scale.y = this.#zoomFunction(this.#currentZoomArgument);
     }
 }

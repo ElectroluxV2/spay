@@ -5,7 +5,6 @@ import { WorldMap } from './worldMap.js';
 
 export class Game {
     #mainCanvas;
-    // #mainCanvasContext;
     #mainCanvasGL;
     #window;
     #animationFrameId;
@@ -167,18 +166,11 @@ export class Game {
         }
     }
 
-    #zoomFunction = x => Math.pow((x / 10) + 1, 2);
-    #currentZoom = 0;
-
-
     /**
      * @param {WheelEvent} WheelEvent 
      */
     onWheel(deltaX, deltaY) {
-        this.#currentZoom -= Math.sign(deltaY) * 0.1;
-        
-        this.#renderer.scale.x = this.#renderer.scale.y = this.#zoomFunction(this.#currentZoom);
-
+        this.#renderer.zoom -= Math.sign(deltaY) * 0.1;
         this.#thresholdFrameUpdate();
     }
 
