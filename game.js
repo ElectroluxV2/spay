@@ -46,7 +46,7 @@ export class Game {
         this.#worldMap = new WorldMap(this.#window);
 
         // World Size 
-        for await (const {p, t} of this.#worldMap.generate(2)) {
+        for await (const {p, t} of this.#worldMap.generate(2000)) {
             console.log(`Generating map. ${p} / ${t}`);
         }
 
@@ -148,6 +148,13 @@ export class Game {
 
 
         if (this.#drag) {
+
+            // const centerHexagon = this.#worldMap.centerHexagon;
+            // const onScreenCenter = this.#worldMap.layout.hexToPixel(centerHexagon);
+            // const transformed = onScreenCenter.multiply(this.#zoomFunction(this.#currentZoom)).add(this.#renderer.offset).add(this.#renderer.transform);
+
+            // console.log(pointer, transformed);
+
             const dx = this.#dragStart.x - pointer.x;
             const dy = this.#dragStart.y - pointer.y;
 
