@@ -157,7 +157,7 @@ export class Renderer {
         const gl = this.#gl;
 
         // Here only apply changes in scale and transform
-        gl.uniform2fv(this.#translationLocation, this.#transform);
+        gl.uniform2fv(this.#translationLocation, this.#transform.add(this.offset));
         gl.uniform2fv(this.#scaleLocation, this.#scale);
 
         // Draw latest triangles TODO: make this multi call instead of one big array
@@ -174,6 +174,8 @@ export class Renderer {
     set transform(value) {
         this.#transform = value;
     }
+
+    offset = new Point(0, 0);
 
     get scale() {
         return this.#scale;

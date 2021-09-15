@@ -33,7 +33,7 @@ export class WorldMap {
      */
     constructor(window) {
         this.#window = window;
-        this.#layout = new Layout(Orientation.FLAT, WorldMap.#HEXAGON_SIZE, new Point(window.innerWidth / 2, window.innerHeight / 2));
+        this.#layout = new Layout(Orientation.FLAT, WorldMap.#HEXAGON_SIZE, new Point(0, 0 /*window.innerWidth / 2, window.innerHeight / 2*/));
         this.#hexagons = new Map();
         this.#hexagonsProperties = new Map();
     }
@@ -60,7 +60,7 @@ export class WorldMap {
         this.#makeGroups();
 
         // TODO: FIXME: Map is not always in center
-        // this.#layout.origin = this.#layout.hexToPixel(this.centerHexagon).multiply(0.5);
+        // this.#layout.origin = this.#layout.hexToPixel(this.centerHexagon);
     }  
 
     #populateGroup(hexagon, lastHexagonGroupId) {
@@ -119,46 +119,46 @@ export class WorldMap {
         console.info('MAP GENERATION START');
         console.time('MAP GENERATION TOOK');
 
-        // current = new Hexagon(0, 0, 0);
-        // this.#hexagons.set(current.hashCode(), current);
-        // this.#setHexagonProperty(current, Hexagon.PROPERTIES.COLOR, this.#cryptoRandomRange(0, WorldMap.#COLORS.length - 1));
+        current = new Hexagon(0, 0, 0);
+        this.#hexagons.set(current.hashCode(), current);
+        this.#setHexagonProperty(current, Hexagon.PROPERTIES.COLOR, this.#cryptoRandomRange(0, WorldMap.#COLORS.length - 1));
 
-        // for (let q = 0; q <= 1_200; q++) {
-        //     for (let r = 0; r <= 1_200 - q; r++) {
-        //         const generated = new Hexagon(q, r);
-        //         this.#hexagons.set(generated.hashCode(), generated);
-        //         this.#setHexagonProperty(generated, Hexagon.PROPERTIES.COLOR, this.#cryptoRandomRange(0, WorldMap.#COLORS.length - 1));
-        //     }
+        for (let q = 0; q <= 100; q++) {
+            for (let r = 0; r <= 100 - q; r++) {
+                const generated = new Hexagon(q, r);
+                this.#hexagons.set(generated.hashCode(), generated);
+                this.#setHexagonProperty(generated, Hexagon.PROPERTIES.COLOR, this.#cryptoRandomRange(0, WorldMap.#COLORS.length - 1));
+            }
+        }
+
+        // if (current === null) {
+        //     current = new Hexagon(0, 0, 0);
+        //     this.#hexagons.set(current.hashCode(), current);
+        //     this.#setHexagonProperty(current, Hexagon.PROPERTIES.COLOR, this.#cryptoRandomRange(0, WorldMap.#COLORS.length - 1));
         // }
 
-        if (current === null) {
-            current = new Hexagon(0, 0, 0);
-            this.#hexagons.set(current.hashCode(), current);
-            this.#setHexagonProperty(current, Hexagon.PROPERTIES.COLOR, this.#cryptoRandomRange(0, WorldMap.#COLORS.length - 1));
-        }
+        // let progress = 0;
+        // const generateNext = current => current.neighbor(this.#cryptoRandomRange(0, allowIslands ? 11 : 5));
+        // const addNext = generated => {
+        //     this.#hexagons.set(generated.hashCode(), generated);
+        //     this.#setHexagonProperty(generated, Hexagon.PROPERTIES.COLOR, this.#cryptoRandomRange(0, WorldMap.#COLORS.length - 1));
+        //     return generated;
+        // };
 
-        let progress = 0;
-        const generateNext = current => current.neighbor(this.#cryptoRandomRange(0, allowIslands ? 11 : 5));
-        const addNext = generated => {
-            this.#hexagons.set(generated.hashCode(), generated);
-            this.#setHexagonProperty(generated, Hexagon.PROPERTIES.COLOR, this.#cryptoRandomRange(0, WorldMap.#COLORS.length - 1));
-            return generated;
-        };
+        // while (this.#hexagons.size < count) {
 
-        while (this.#hexagons.size < count) {
+        //     let step = 0;
+        //     while (lessLakes && this.#hexagons.size < count && step++ <= 5) {
+        //         addNext(generateNext(current));
+        //     }
 
-            let step = 0;
-            while (lessLakes && this.#hexagons.size < count && step++ <= 5) {
-                addNext(generateNext(current));
-            }
+        //     current = addNext(generateNext(current, true));
 
-            current = addNext(generateNext(current, true));
-
-            if (progress !== this.#hexagons.size) {
-                progress = this.#hexagons.size;
-                yield {p: progress, t: count};
-            }
-        }
+        //     if (progress !== this.#hexagons.size) {
+        //         progress = this.#hexagons.size;
+        //         yield {p: progress, t: count};
+        //     }
+        // }
 
         console.timeEnd('MAP GENERATION TOOK');
     }
@@ -230,5 +230,9 @@ export class WorldMap {
 
     get hexagonSize() {
         return this.#hexagons.size;
+    }
+
+    get layout() {
+        return this.#layout;
     }
 }

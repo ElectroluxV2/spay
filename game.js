@@ -45,7 +45,8 @@ export class Game {
     async #loadLevel() {
         this.#worldMap = new WorldMap(this.#window);
 
-        for await (const {p, t} of this.#worldMap.generate(250000)) {
+        // World Size 
+        for await (const {p, t} of this.#worldMap.generate(2)) {
             console.log(`Generating map. ${p} / ${t}`);
         }
 
@@ -83,6 +84,9 @@ export class Game {
 
         this.#renderer.vertices = vertices;
         this.#renderer.colors = colors;
+
+        this.#renderer.offset.x = this.#window.innerWidth / 2;
+        this.#renderer.offset.y = this.#window.innerHeight / 2;
 
         console.timeEnd('CALCULATE HEXAGONS DATA TOOK');
     }
@@ -159,6 +163,7 @@ export class Game {
 
     #zoomFunction = x => Math.pow((x / 10) + 1, 2);
     #currentZoom = 0;
+
 
     /**
      * @param {WheelEvent} WheelEvent 
