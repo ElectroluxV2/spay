@@ -31,31 +31,29 @@ export class Renderer {
         this.#scale = new Point(1, 1);
         this.#transform = new Point(0, 0);
         this.#offset = new Point(0, 0);
-        this.#layout = new Layout(Orientation.FLAT, Renderer.#HEXAGON_SIZE, new Point(0, 0 /*window.innerWidth / 2, window.innerHeight / 2*/));
+        this.#layout = new Layout(Orientation.FLAT, Renderer.#HEXAGON_SIZE, new Point(0, 0));
     }
 
     /**
      * Converts hexagon to hexagon's center on screen
-     * @param {Layout} layout
      * @param {Hexagon} hexagon
      * @returns {Point}
      */
-    static hexToPixel(layout, hexagon) {
-        const o = layout.orientation;
-        const x = (o.f[0] * hexagon.q + o.f[1] * hexagon.r) * layout.size.x;
-        const y = (o.f[2] * hexagon.q + o.f[3] * hexagon.r) * layout.size.y;
-        return new Point(x + layout.origin.x, y + layout.origin.y);
+    static hexagonToPixel(hexagon) {
+        const o = this.#layout.orientation;
+        const x = (o.f[0] * hexagon.q + o.f[1] * hexagon.r) * this.#layout.size.x;
+        const y = (o.f[2] * hexagon.q + o.f[3] * hexagon.r) * this.#layout.size.y;
+        return new Point(x + this.#layout.origin.x, y + this.#layout.origin.y);
     }
 
     /**
      * Converts screen pixel to hexagon
-     * @param {Layout} layout
      * @param {Point} pixel
      * @returns {Hexagon}
      */
-    static pixelToHex(layout, pixel) {
-        const o = layout.orientation;
-        const pt = new Point((pixel.x - layout.origin.x) / layout.size.x, (pixel.y - layout.origin.y) / layout.size.y);
+    static pixelToHexagon(pixel) {
+        const o = this.#layout.orientation;
+        const pt = new Point((pixel.x - this.#layout.origin.x) / this.#layout.size.x, (pixel.y - this.#layout.origin.y) / this.#layout.size.y);
         const q = o.b[0] * pt.x + o.b[1] * pt.y;
         const r = o.b[2] * pt.x + o.b[3] * pt.y;
         const s = -q - r;
