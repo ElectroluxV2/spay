@@ -34,6 +34,62 @@ export class Renderer {
         this.#layout = new Layout(Orientation.FLAT, Renderer.#HEXAGON_SIZE, new Point(0, 0 /*window.innerWidth / 2, window.innerHeight / 2*/));
     }
 
+    /**
+     * Converts hexagon to hexagon's center on screen
+     * @param {Layout} layout
+     * @param {Hexagon} hexagon
+     * @returns {Point}
+     */
+    static hexToPixel(layout, hexagon) {
+        const o = layout.orientation;
+        const x = (o.f[0] * hexagon.q + o.f[1] * hexagon.r) * layout.size.x;
+        const y = (o.f[2] * hexagon.q + o.f[3] * hexagon.r) * layout.size.y;
+        return new Point(x + layout.origin.x, y + layout.origin.y);
+    }
+
+    /**
+     * Converts screen pixel to hexagon
+     * @param {Layout} layout
+     * @param {Point} pixel
+     * @returns {Hexagon}
+     */
+    static pixelToHex(layout, pixel) {
+        const o = layout.orientation;
+        const pt = new Point((pixel.x - layout.origin.x) / layout.size.x, (pixel.y - layout.origin.y) / layout.size.y);
+        const q = o.b[0] * pt.x + o.b[1] * pt.y;
+        const r = o.b[2] * pt.x + o.b[3] * pt.y;
+        const s = -q - r;
+
+        let qi = Math.round(q);
+        let ri = Math.round(r);
+        let si = Math.round(s);
+
+        const qDiff = Math.abs(qi - q);
+        const rDiff = Math.abs(ri - r);
+        const sDiff = Math.abs(si - s);
+
+        if (qDiff > rDiff && qDiff > sDiff) {
+            qi = -ri - si;
+        } else if (rDiff > sDiff) {
+            ri = -qi - si;
+        } else {
+            si = -qi - ri;
+        }
+
+        return new Hexagon(qi, ri, si);
+    }
+
+    /**
+     * 
+     * @param {Point} hexagonCorner 
+     * @param {Point} hexagonCenter 
+     * @param {Number} widthMultiplier 
+     * @returns {Point}
+     */
+    static borderCorner(hexagonCorner, hexagonCenter, widthMultiplier) {
+        return hexagonCenter.add(new Point(hexagonCorner.x - hexagonCenter.x, hexagonCorner.y - hexagonCenter.y).multiply(widthMultiplier));
+    }
+
     async #load() {
         // Get shaders source
         const vertexShaderSource =
@@ -128,7 +184,7 @@ export class Renderer {
 
     *getTrianglesFromHexagon(hexagon) {
         const hexagonCorners = this.#layout.hexagonCorners(hexagon);
-        const hexagonCenter = this.#layout.hexToPixel(hexagon);
+        const hexagonCenter = this.#layout.hexagonToPixelUntransformed(hexagon);
 
         for (let i = 0; i < 6; i++) {
             yield [(hexagonCenter), (hexagonCorners[i]), (hexagonCorners[(i + 1) % 6])];
