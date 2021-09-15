@@ -148,10 +148,12 @@ export class Game {
         if (this.#drag) {
 
             // const centerHexagon = this.#worldMap.centerHexagon;
-            // const onScreenCenter = this.#worldMap.layout.hexToPixel(centerHexagon);
-            // const transformed = onScreenCenter.multiply(this.#zoomFunction(this.#currentZoom)).add(this.#renderer.offset).add(this.#renderer.transform);
+            // const onScreenCenter = this.#renderer.hexagonToPixel(centerHexagon);
 
-            // console.log(pointer, transformed);
+            // console.log(pointer, onScreenCenter);
+
+            // const hexagonOnScreenCenter = this.#renderer.pixelToHexagon(new Point(this.#window.innerWidth / 2, this.#window.innerHeight / 2));
+            // console.log(centerHexagon, hexagonOnScreenCenter);
 
             const dx = this.#dragStart.x - pointer.x;
             const dy = this.#dragStart.y - pointer.y;

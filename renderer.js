@@ -1,4 +1,5 @@
 import { Point } from './point.js';
+import { Hexagon } from './hexagon.js';
 import { Layout } from './layout.js';
 import { Orientation } from './orientation.js';
 
@@ -41,15 +42,26 @@ export class Renderer {
     }
 
     /**
+     * 
+     * @param {Point} hexagonCorner 
+     * @param {Point} hexagonCenter 
+     * @param {Number} widthMultiplier 
+     * @returns {Point}
+     */
+    static borderCorner(hexagonCorner, hexagonCenter, widthMultiplier) {
+        return hexagonCenter.add(new Point(hexagonCorner.x - hexagonCenter.x, hexagonCorner.y - hexagonCenter.y).multiply(widthMultiplier));
+    }
+
+    /**
      * Converts hexagon to hexagon's center on screen
      * @param {Hexagon} hexagon
      * @returns {Point}
      */
-    static hexagonToPixel(hexagon) {
+    hexagonToPixel(hexagon) {
         const o = this.#layout.orientation;
-        const x = (o.f[0] * hexagon.q + o.f[1] * hexagon.r) * this.#layout.size.x;
-        const y = (o.f[2] * hexagon.q + o.f[3] * hexagon.r) * this.#layout.size.y;
-        return new Point(x + this.#layout.origin.x, y + this.#layout.origin.y);
+        const x = (o.f[0] * hexagon.q + o.f[1] * hexagon.r) * this.#layout.size.x * this.scale.x;
+        const y = (o.f[2] * hexagon.q + o.f[3] * hexagon.r) * this.#layout.size.y * this.scale.y;
+        return new Point(x + this.#transform.x + this.#offset.x, y + this.#transform.y + this.#offset.y);
     }
 
     /**
@@ -57,9 +69,9 @@ export class Renderer {
      * @param {Point} pixel
      * @returns {Hexagon}
      */
-    static pixelToHexagon(pixel) {
+    pixelToHexagon(pixel) {
         const o = this.#layout.orientation;
-        const pt = new Point((pixel.x - this.#layout.origin.x) / this.#layout.size.x, (pixel.y - this.#layout.origin.y) / this.#layout.size.y);
+        const pt = new Point((pixel.x - this.#transform.x - this.#offset.x) / (this.#layout.size.x * this.#scale.x), (pixel.y - this.#transform.y - this.#offset.y) / (this.#layout.size.y * this.#scale.y));
         const q = o.b[0] * pt.x + o.b[1] * pt.y;
         const r = o.b[2] * pt.x + o.b[3] * pt.y;
         const s = -q - r;
@@ -81,17 +93,6 @@ export class Renderer {
         }
 
         return new Hexagon(qi, ri, si);
-    }
-
-    /**
-     * 
-     * @param {Point} hexagonCorner 
-     * @param {Point} hexagonCenter 
-     * @param {Number} widthMultiplier 
-     * @returns {Point}
-     */
-    static borderCorner(hexagonCorner, hexagonCenter, widthMultiplier) {
-        return hexagonCenter.add(new Point(hexagonCorner.x - hexagonCenter.x, hexagonCorner.y - hexagonCenter.y).multiply(widthMultiplier));
     }
 
     async #load() {
@@ -229,7 +230,7 @@ export class Renderer {
     }
 
     draw() {
-        console.time('DRAW');
+        // console.time('DRAW');
 
         const gl = this.#gl;
 
@@ -241,7 +242,7 @@ export class Renderer {
         gl.clear(gl.COLOR_BUFFER_BIT);
         gl.drawArrays(gl.TRIANGLES, 0, this.#vertexCount);
         
-        console.timeEnd('DRAW');
+        // console.timeEnd('DRAW');
     }
 
     get transform() {
@@ -272,6 +273,10 @@ export class Renderer {
         return this.#layout;
     }
 
+    get currentZoom() {
+        return this.#zoomFunction(this.#currentZoomArgument);
+    }
+
     get zoom() {
         return this.#currentZoomArgument;
     }
@@ -285,6 +290,6 @@ export class Renderer {
             this.#currentZoomArgument = value;
         }
 
-        this.scale.x = this.scale.y = this.#zoomFunction(this.#currentZoomArgument);
+        this.scale.x = this.scale.y = this.currentZoom;
     }
 }
