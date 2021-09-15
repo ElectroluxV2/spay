@@ -14,6 +14,7 @@ export class Renderer {
     #scaleLocation;
 
     #transform;
+    #offset;
     #scale;
     #layout;
 
@@ -29,6 +30,7 @@ export class Renderer {
 
         this.#scale = new Point(1, 1);
         this.#transform = new Point(0, 0);
+        this.#offset = new Point(0, 0);
         this.#layout = new Layout(Orientation.FLAT, Renderer.#HEXAGON_SIZE, new Point(0, 0 /*window.innerWidth / 2, window.innerHeight / 2*/));
     }
 
@@ -190,7 +192,13 @@ export class Renderer {
         this.#transform = value;
     }
 
-    offset = new Point(0, 0);
+    set offset(value) {
+        this.#offset = value;
+    }
+
+    get offset() {
+        return this.#offset;
+    }
 
     get scale() {
         return this.#scale;
