@@ -37,8 +37,6 @@ export class Game {
         this.#mainCanvasGL.clearColor(0, 0, 0, 1);
         this.#mainCanvasGL.clear(this.#mainCanvasGL.COLOR_BUFFER_BIT | this.#mainCanvasGL.DEPTH_BUFFER_BIT);
 
-        this.#worldMap = new WorldMap();
-
         this.#loadLevel().then(this.#singleFrameUpdate.bind(this));
     }
 
@@ -93,6 +91,8 @@ export class Game {
     }
 
     async #loadLevel() {
+        this.#worldMap = new WorldMap();
+
         // World Size 
         for await (const {p, t} of this.#worldMap.generate(2000)) {
             console.slog(`Generating map. ${p} / ${t}`);
@@ -193,33 +193,7 @@ export class Game {
         // this.#thresholdFrameUpdate();
     }
 
-    #onFrameUpdate() {
-        const last = new Point(...this.#renderer.origin);
-
-        if (this.keyboardStates['w'] || this.keyboardStates['W']) {
-           this.#renderer.origin.y += 1;
-        }
-
-        if (this.keyboardStates['s'] || this.keyboardStates['S']) {
-            this.#renderer.origin.y -= 1;
-        }
-
-        if (this.keyboardStates['a'] || this.keyboardStates['A']) {
-            this.#renderer.origin.x += 1;
-        }
-
-        if (this.keyboardStates['d'] || this.keyboardStates['D']) {
-            this.#renderer.origin.x -= 1;
-        }
-
-        if (last.x === this.#renderer.origin.x && last.y === this.#renderer.origin.y) return;
-
-        console.log('UPDATE');
-        this.#calculateDataForRenderer();
-    }
-
     #drawSingleFrame() {
-        this.#onFrameUpdate();
         this.#renderer.draw();
     }
 }
