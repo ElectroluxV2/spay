@@ -27,7 +27,8 @@ const workerContext = {
     onPointerUp: ({pageX, pageY}) => workerContext.game?.onPointerUp(pageX, pageY),
     onWheel: ({deltaX, deltaY}) => {
         workerContext.game?.onWheel(deltaX, deltaY);
-    }
+    },
+    pinchGesture: ({change}) => workerContext.game?.pinchGesture(change)
 };
 
 onmessage = ({data} = event) => workerContext[data.function](data);

@@ -94,7 +94,7 @@ export class Game {
         this.#worldMap = new WorldMap();
 
         // World Size 
-        for await (const {p, t} of this.#worldMap.generate(1000, false, false)) {
+        for await (const {p, t} of this.#worldMap.generate(1000, true, false)) {
             console.slog(`Generating map. ${p} / ${t}`);
         }
 
@@ -161,6 +161,7 @@ export class Game {
      */
     onPointerMove(pageX, pageY) {
         const pointer = new Point(pageX.toFixed(0), pageY.toFixed(0));
+        this.#selectedHexagon = this.#renderer.pixelToHexagon(pointer.x, pointer.y);
 
         if (this.#drag) {
 
@@ -191,6 +192,10 @@ export class Game {
     onWheel(deltaX, deltaY) {
         this.#renderer.zoom -= Math.sign(deltaY) * 0.1;
         // this.#thresholdFrameUpdate();
+    }
+
+    pinchGesture(change) {
+        this.#renderer.zoom += change;
     }
 
     #drawSingleFrame() {

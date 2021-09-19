@@ -15,8 +15,8 @@ mainWorker.postMessage({
     window: Polyfills.createWindow(),
 }, [mainCanvas]);
 
-console.log(mainCanvas);
-
+const eventsCache = [];
+let previousDifference = -1;
 
 // Forward window events
 window.onresize = event => {
@@ -38,23 +38,71 @@ window.onkeyup = event => mainWorker.postMessage({
 });
 
 // Etc. eg. PointerEvents
-window.onpointermove = ({pageX, pageY}) => mainWorker.postMessage({
-    function: 'onPointerMove',
-    pageX: pageX,
-    pageY: pageY
-});
+window.onpointermove = ({pageX, pageY} = event) => {
+    for (let i = 0; i < eventsCache.length; i++) {
+        if (event.pointerId == eventsCache[i].pointerId) {
+            eventsCache[i] = event;
+            break;
+        }
+    }
+     
+    // If two pointers are down, check for pinch gestures
+    if (eventsCache.length == 2) {
+        // Calculate the distance between the two pointers
+        const curDiff = Math.hypot(eventsCache[1].clientX - eventsCache[0].clientX, eventsCache[1].clientY - eventsCache[0].clientY); // Math.abs(eventsCache[0].clientX - eventsCache[1].clientX);
+        
+        if (previousDifference > 0) {
 
-window.onpointerdown = ({pageX, pageY}) => mainWorker.postMessage({
-    function: 'onPointerDown',
-    pageX: pageX,
-    pageY: pageY
-});
+            // Minimum change
+            if (Math.abs(curDiff - previousDifference) > 0.2) {
+                // The distance between the two pointers
+                mainWorker.postMessage({
+                    function: 'pinchGesture',
+                    change: (curDiff - previousDifference) * 0.017 // Const modifier
+                });
+            }
+        }
+        
+        // Cache the distance for the next move event 
+        previousDifference = curDiff;
+    } else {
+        // Just move
+        mainWorker.postMessage({
+            function: 'onPointerMove',
+            pageX: pageX,
+            pageY: pageY
+        });
+    }
+};
 
-window.onpointerup = ({pageX, pageY}) => mainWorker.postMessage({
-    function: 'onPointerUp',
-    pageX: pageX,
-    pageY: pageY
-});
+window.onpointerdown = ({pageX, pageY} = event) => {
+    mainWorker.postMessage({
+        function: 'onPointerDown',
+        pageX: pageX,
+        pageY: pageY
+    });
+
+    eventsCache.push(event);
+};
+
+window.onpointerup = ({pageX, pageY} = event) => {
+    mainWorker.postMessage({
+        function: 'onPointerUp',
+        pageX: pageX,
+        pageY: pageY
+    });
+
+    // Remove this event from the target's cache
+    for (let i = 0; i < eventsCache.length; i++) {
+        if (eventsCache[i].pointerId == event.pointerId) {
+            eventsCache.splice(i, 1);
+            break;
+        }
+    }
+    
+    // If the number of pointers down is less than two then reset diff tracker
+    if (eventsCache.length < 2) previousDifference = -1;
+};
 
 window.onwheel = ({deltaX, deltaY}) => mainWorker.postMessage({
     function: 'onWheel',
