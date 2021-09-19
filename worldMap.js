@@ -47,8 +47,9 @@ export class WorldMap {
         return this.#hexagonsProperties.get(property)?.has(hexagon.hashCode()) ?? false;
     }
 
-    async *generate(hexagonCount = 10, lessLakes = true, allowIslands = false) {
-        yield* this.#generatorV4(null, hexagonCount, lessLakes, allowIslands);
+    async *generate() {
+        yield* this.#generatorV4(null, ...arguments);
+        // yield* this.#triangleMapGenerator(...arguments);
 
         this.#makeGroups();
     }  
@@ -109,18 +110,6 @@ export class WorldMap {
         console.info('MAP GENERATION START');
         console.time('MAP GENERATION TOOK');
 
-        // current = new Hexagon(0, 0, 0);
-        // this.#hexagons.set(current.hashCode(), current);
-        // this.#setHexagonProperty(current, Hexagon.PROPERTIES.COLOR, this.#cryptoRandomRange(0, WorldMap.#COLORS.length - 2));
-
-        // for (let q = 0; q <= 100; q++) {
-        //     for (let r = 0; r <= 100 - q; r++) {
-        //         const generated = new Hexagon(q, r);
-        //         this.#hexagons.set(generated.hashCode(), generated);
-        //         this.#setHexagonProperty(generated, Hexagon.PROPERTIES.COLOR, this.#cryptoRandomRange(0, WorldMap.#COLORS.length - 2));
-        //     }
-        // }
-
         if (current === null) {
             current = new Hexagon(0, 0, 0);
             this.#hexagons.set(current.hashCode(), current);
@@ -153,6 +142,24 @@ export class WorldMap {
         const centerHexagon = this.centerHexagon;
         this.#hexagons.set(centerHexagon.hashCode(), centerHexagon);
         this.#setHexagonProperty(centerHexagon, Hexagon.PROPERTIES.COLOR, WorldMap.#COLORS.length - 1);
+
+        console.timeEnd('MAP GENERATION TOOK');
+    }
+
+    *#triangleMapGenerator(size) {
+        console.info('MAP GENERATION START');
+        console.time('MAP GENERATION TOOK');
+
+        const total = (size * size) * 0.5;
+        let progress = 0;
+        for (let q = 0; q <= size; q++) {
+            for (let r = 0; r <= size - q; r++) {
+                yield {p: ++progress, t: total};
+                const generated = new Hexagon(q, r);
+                this.#hexagons.set(generated.hashCode(), generated);
+                this.#setHexagonProperty(generated, Hexagon.PROPERTIES.COLOR, this.#cryptoRandomRange(0, WorldMap.#COLORS.length - 2));
+            }
+        }
 
         console.timeEnd('MAP GENERATION TOOK');
     }

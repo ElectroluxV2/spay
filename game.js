@@ -94,7 +94,7 @@ export class Game {
         this.#worldMap = new WorldMap();
 
         // World Size 
-        for await (const {p, t} of this.#worldMap.generate(2000)) {
+        for await (const {p, t} of this.#worldMap.generate(1000, false, false)) {
             console.slog(`Generating map. ${p} / ${t}`);
         }
 
