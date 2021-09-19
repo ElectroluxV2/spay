@@ -27,4 +27,21 @@ export class Polyfills {
         const y = (cos * (point.y - origin.y)) - (sin * (point.x - origin.x)) + origin.y
         return new Point(x, y);
     }
+
+    static lastTimer = null;
+    static lastTime = 0;
+    static slog(m) {
+        const currentTime = performance.now();
+
+        if (currentTime - Polyfills.lastTime > 20) {
+            Polyfills.lastTime = currentTime;
+            console.log(m);
+            return;
+        }
+
+        clearTimeout(Polyfills.lastTimer);
+        Polyfills.lastTimer = setTimeout(() => {
+            console.log(m);
+        }, 20);
+    }
 }

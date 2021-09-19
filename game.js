@@ -37,21 +37,21 @@ export class Game {
         this.#mainCanvasGL.clearColor(0, 0, 0, 1);
         this.#mainCanvasGL.clear(this.#mainCanvasGL.COLOR_BUFFER_BIT | this.#mainCanvasGL.DEPTH_BUFFER_BIT);
 
-        this.#renderer = new Renderer(this.#mainCanvasGL);
         this.#worldMap = new WorldMap();
 
         this.#loadLevel().then(this.#singleFrameUpdate.bind(this));
     }
 
-    #calculateDataForRenderer() {
-        console.log('CALCULATE HEXAGONS DATA START');
-        console.time('CALCULATE HEXAGONS DATA TOOK');
-
-        // Set map center as layout origin
+    *#calculateDataForRenderer() {
+        console.log('CALCULATE RENDERER DATA START');
+        console.time('CALCULATE RENDERER DATA TOOK');
 
         // Calculate triangles and set colors for renderer
         const vertices = new Float32Array(this.#worldMap.hexagonSize * 6 * 3 * 2); // 6 times triangle, 3 times vertex, 2 times coord
         const colors = new Float32Array(this.#worldMap.hexagonSize * 6 * 3 * 3); // 6 times triangle, 3 times vertex, 3 times color (gradient)
+
+        const total = (this.#worldMap.hexagonSize * 6 * 3) + (this.#worldMap.hexagonSize * 6 * 3);
+        let progress = 0;
 
         let vertexIndex = 0;
         let colorIndex = 0;
@@ -61,6 +61,8 @@ export class Game {
                 for (const vertex of triangle) {
                     vertices.set(vertex, vertexIndex);
                     vertexIndex += 2;
+
+                    yield {p: ++progress, t: total};
                 }
             }
 
@@ -76,6 +78,8 @@ export class Game {
             for (let i = 0; i < 6 * 3; i++) {
                 colors.set(colorRGB, colorIndex);
                 colorIndex += 3;
+
+                yield {p: ++progress, t: total};
             }
         }
 
@@ -85,17 +89,22 @@ export class Game {
         this.#renderer.offset.x = this.#window.innerWidth / 2;
         this.#renderer.offset.y = this.#window.innerHeight / 2;
 
-        console.timeEnd('CALCULATE HEXAGONS DATA TOOK');
+        console.timeEnd('CALCULATE RENDERER DATA TOOK');
     }
 
     async #loadLevel() {
         // World Size 
         for await (const {p, t} of this.#worldMap.generate(2000)) {
-            console.log(`Generating map. ${p} / ${t}`);
+            console.slog(`Generating map. ${p} / ${t}`);
         }
 
-        this.#renderer.moveOriginToHexagon(this.#worldMap.centerHexagon);
-        this.#calculateDataForRenderer();
+        // Create renderer with center hexagon as origin
+        this.#renderer = new Renderer(this.#mainCanvasGL, this.#worldMap.centerHexagon);
+
+        // Calculate vertices for WebGL
+        for (const {p, t} of this.#calculateDataForRenderer()) {
+            console.slog(`Calculating renderer data. ${p} / ${t}`);
+        }
     }
 
     #startFrameUpdate() {

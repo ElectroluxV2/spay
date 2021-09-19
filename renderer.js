@@ -28,9 +28,10 @@ export class Renderer {
 
     /**
      * 
-     * @param {WebGL2RenderingContext} gl 
+     * @param {WebGL2RenderingContext} gl
+     * @param {Hexagon} centerHexagon
      */
-    constructor(gl) {
+    constructor(gl, centerHexagon) {
         this.#gl = gl;
         this.#load();
 
@@ -38,6 +39,8 @@ export class Renderer {
         this.#transform = new Point(0, 0);
         this.#offset = new Point(0, 0);
         this.#layout = new Layout(Orientation.FLAT, Renderer.#HEXAGON_SIZE, new Point(0, 0));
+        // Make center of map the origin
+        this.#layout.origin = this.#layout.hexagonToPixelUntransformed(centerHexagon).multiply(-1);
         this.#currentZoomArgument = 0;
     }
 
@@ -50,10 +53,6 @@ export class Renderer {
      */
     static borderCorner(hexagonCorner, hexagonCenter, widthMultiplier) {
         return hexagonCenter.add(new Point(hexagonCorner.x - hexagonCenter.x, hexagonCorner.y - hexagonCenter.y).multiply(widthMultiplier));
-    }
-
-    moveOriginToHexagon(hexagon) {
-        this.#layout.origin = this.#layout.hexagonToPixelUntransformed(hexagon).multiply(-1);
     }
 
     /**

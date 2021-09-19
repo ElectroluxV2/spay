@@ -34,3 +34,4 @@ onmessage = ({data} = event) => workerContext[data.function](data);
 
 // Polyfill for canvas.context.reset();
 OffscreenCanvasRenderingContext2D.prototype.reset = Polyfills.canvasContextReset;
+console.slog = Polyfills.slog;
