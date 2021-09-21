@@ -38,7 +38,7 @@ export class Matrix extends Array {
      * @param {Number[]} contents 
      */
     constructor(contents) {
-        super(contents);
+        super(...contents);
     }
 
     /**
