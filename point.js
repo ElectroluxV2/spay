@@ -21,7 +21,7 @@ export class Point extends Array {
      * @returns {Number}
      */
     static distance(first, second) {
-        return Math.sqrt(Math.pow(second.x - first.x, 2) + Math.pow(second.y - first.y, 2));
+        return Math.hypot(second.x - first.x, second.y - first.y);
     }
 
     /**
@@ -32,6 +32,16 @@ export class Point extends Array {
      */
     static equals(first, second) {
         return Math.abs(first.x - second.x) < Number.EPSILON && Math.abs(first.y - second.y) < Number.EPSILON;
+    }
+
+    /**
+     * https://webglfundamentals.org/webgl/resources/m3.js
+     * @param {Point} first 
+     * @param {Point} second 
+     * @returns {Number}
+     */
+    static dot(first, second) {
+        return first.x * second.x + first.y * second.y;
     }
 
     /**
@@ -58,18 +68,6 @@ export class Point extends Array {
      */
     equals(other) {
         return Point.equals(this, other);
-    }
-
-    multiply(scalar) {
-        return new Point(this.x * scalar, this.y * scalar);
-    }
-
-    add(other) {
-        return new Point(this.x + other.x, this.y + other.y);
-    }
-
-    sub(other) {
-        return new Point(this.x - other.x, this.y - other.y);
     }
 
     set x(value) {

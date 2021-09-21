@@ -2,6 +2,7 @@ import { Point } from './point.js';
 import { Hexagon } from './hexagon.js';
 import { Layout } from './layout.js';
 import { Orientation } from './orientation.js';
+import { Vector } from './vector.js';
 
 export class Renderer {
     static #HEXAGON_SIZE = new Point(20, 20);
@@ -39,7 +40,7 @@ export class Renderer {
         this.#offset = new Point(0, 0);
         this.#layout = new Layout(Orientation.FLAT, Renderer.#HEXAGON_SIZE, new Point(0, 0));
         // Make center of map the origin
-        this.#layout.origin = this.#layout.hexagonToPixelUntransformed(centerHexagon).multiply(-1);
+        this.#layout.origin = Vector.multiply(this.#layout.hexagonToPixelUntransformed(centerHexagon), -1);
         this.#currentZoomArgument = 0;
     }
 
@@ -51,7 +52,8 @@ export class Renderer {
      * @returns {Point}
      */
     static borderCorner(hexagonCorner, hexagonCenter, widthMultiplier) {
-        return hexagonCenter.add(new Point(hexagonCorner.x - hexagonCenter.x, hexagonCorner.y - hexagonCenter.y).multiply(widthMultiplier));
+        return Vector.makeVector(hexagonCorner, hexagonCenter).multiply(widthMultiplier).add(hexagonCenter);
+        // return hexagonCenter.add(new Point(hexagonCorner.x - hexagonCenter.x, hexagonCorner.y - hexagonCenter.y).multiply(widthMultiplier));
     }
 
     /**
@@ -236,7 +238,7 @@ export class Renderer {
         const gl = this.#gl;
 
         // Here only apply changes in scale and transform
-        gl.uniform2fv(this.#translationLocation, this.#transform.add(this.offset));
+        gl.uniform2fv(this.#translationLocation, Vector.add(this.#transform, this.offset));
         gl.uniform2fv(this.#scaleLocation, this.#scale);
 
         // Draw latest triangles TODO: make this multi call instead of one big array
