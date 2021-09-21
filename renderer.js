@@ -15,32 +15,37 @@ export class Renderer {
     #gl;
     #program;
 
-    #resolutionUniformLocation;
     #matrixLocation;
 
     #transform;
     #offset;
+    #origin;
     #scale;
     #layout;
     #currentZoomArgument;
 
     #vertexCount;
 
+    camera = {
+        x: 0,
+        y: 0,
+        rotation: 0,
+        zoom: 1,
+    };
+
     /**
      * 
      * @param {WebGL2RenderingContext} gl
-     * @param {Hexagon} centerHexagon
      */
-    constructor(gl, centerHexagon) {
+    constructor(gl) {
         this.#gl = gl;
         this.#load();
 
         this.#scale = new Point(1, 1);
         this.#transform = new Point(0, 0);
         this.#offset = new Point(0, 0);
+        this.#origin = new Point(0, 0);
         this.#layout = new Layout(Orientation.FLAT, Renderer.#HEXAGON_SIZE, new Point(0, 0));
-        // Make center of map the origin
-        this.#layout.origin = Vector.multiply(this.#layout.hexagonToPixelUntransformed(centerHexagon), -1);
         this.#currentZoomArgument = 0;
     }
 
@@ -107,24 +112,11 @@ export class Renderer {
             layout (location=0) in vec2 a_position;
             layout (location=1) in vec3 color;
 
-            uniform vec2 u_resolution;
             uniform mat3 u_matrix;
             out vec3 vColor;
     
             void main() {
-                // Multiply the position by the matrix.
-                vec2 position = (u_matrix * vec3(a_position, 1)).xy;
-
-                // convert the position from pixels to 0.0 to 1.0
-                vec2 zeroToOne = position / u_resolution;
-
-                // convert from 0->1 to 0->2
-                vec2 zeroToTwo = zeroToOne * 2.0;
-
-                // convert from 0->2 to -1->+1 (clipspace)
-                vec2 clipSpace = zeroToTwo - 1.0;
-
-                gl_Position = vec4(clipSpace * vec2(1, -1), 0, 1);
+                gl_Position = vec4((u_matrix * vec3(a_position, 1)).xy, 0, 1);
                 vColor = color;
             }`;
     
@@ -178,20 +170,8 @@ export class Renderer {
         // Finally, activate WebGL program
         gl.useProgram(program);
 
-        // Remember to update on canvas size change
-        this.#resolutionUniformLocation = gl.getUniformLocation(program, 'u_resolution');
-        this.#adjustResolution();
-
         // Save locations
         this.#matrixLocation = gl.getUniformLocation(program, "u_matrix");
-    }
-
-    /**
-     * Adjust positioning mathematic in gl that depends on canvas's size
-     */
-    #adjustResolution() {
-        const gl = this.#gl;
-        gl.uniform2f(this.#resolutionUniformLocation, gl.canvas.width, gl.canvas.height);
     }
 
     *getTrianglesFromHexagon(hexagon) {
@@ -205,7 +185,7 @@ export class Renderer {
 
 
     onWindowResize() {
-        this.#adjustResolution();
+        
     }
 
     /**
@@ -236,86 +216,44 @@ export class Renderer {
         gl.enableVertexAttribArray(1);
     }
 
-    m3 = {
-        translation: function translation(tx, ty) {
-          return [
-            1, 0, 0,
-            0, 1, 0,
-            tx, ty, 1,
-          ];
-        },
-      
-        rotation: function rotation(angleInRadians) {
-          var c = Math.cos(angleInRadians);
-          var s = Math.sin(angleInRadians);
-          return [
-            c, -s, 0,
-            s, c, 0,
-            0, 0, 1,
-          ];
-        },
-      
-        scaling: function scaling(sx, sy) {
-          return [
-            sx, 0, 0,
-            0, sy, 0,
-            0, 0, 1,
-          ];
-        },
-      
-        multiply: function multiply(a, b) {
-          var a00 = a[0 * 3 + 0];
-          var a01 = a[0 * 3 + 1];
-          var a02 = a[0 * 3 + 2];
-          var a10 = a[1 * 3 + 0];
-          var a11 = a[1 * 3 + 1];
-          var a12 = a[1 * 3 + 2];
-          var a20 = a[2 * 3 + 0];
-          var a21 = a[2 * 3 + 1];
-          var a22 = a[2 * 3 + 2];
-          var b00 = b[0 * 3 + 0];
-          var b01 = b[0 * 3 + 1];
-          var b02 = b[0 * 3 + 2];
-          var b10 = b[1 * 3 + 0];
-          var b11 = b[1 * 3 + 1];
-          var b12 = b[1 * 3 + 2];
-          var b20 = b[2 * 3 + 0];
-          var b21 = b[2 * 3 + 1];
-          var b22 = b[2 * 3 + 2];
-          return [
-            b00 * a00 + b01 * a10 + b02 * a20,
-            b00 * a01 + b01 * a11 + b02 * a21,
-            b00 * a02 + b01 * a12 + b02 * a22,
-            b10 * a00 + b11 * a10 + b12 * a20,
-            b10 * a01 + b11 * a11 + b12 * a21,
-            b10 * a02 + b11 * a12 + b12 * a22,
-            b20 * a00 + b21 * a10 + b22 * a20,
-            b20 * a01 + b21 * a11 + b22 * a21,
-            b20 * a02 + b21 * a12 + b22 * a22,
-          ];
-        },
-    };
+    makeCameraMatrix() {
+        let cameraMat = Matrix.identity();
+        cameraMat = Matrix.translate(cameraMat, this.camera.x, this.camera.y);
+        cameraMat = Matrix.rotate(cameraMat, this.camera.rotation);
+        cameraMat = Matrix.scale(cameraMat, ...this.#scale);
+        return cameraMat;
+    }
+
+    makeViewProjection() {
+        // same as ortho(0, width, height, 0, -1, 1)
+        const projectionMat = Matrix.projection(this.#gl.canvas.width, this.#gl.canvas.height);
+        const cameraMat = this.makeCameraMatrix();
+        let viewMat = Matrix.inverse(cameraMat);
+        return Matrix.multiply(projectionMat, viewMat);
+    }
 
     draw() {
         // console.time('DRAW');
-
         const gl = this.#gl;
 
-        // Here only apply changes in scale and transform
-        // gl.uniform2fv(this.#translationLocation, Vector.add(this.#transform, this.offset));
-        // gl.uniform2fv(this.#scaleLocation, this.#scale);
-
         // Compute the matrices
-        const translationMatrix = Matrix.translation(...Vector.add(this.#transform, this.offset));
+        const projectionMatrix = Matrix.projection(gl.canvas.width, gl.canvas.height);
+        const translationMatrix = Matrix.translation(...Vector.add(this.#transform, this.#offset));
         const rotationMatrix = Matrix.rotation(0);
         const scaleMatrix = Matrix.scaling(...this.#scale);
-        const moveOriginMatrix = Matrix.translation(-500, -750);
+        const moveOriginMatrix = Matrix.translation(...this.#origin);
 
-        // Multiply the matrices.
-        let matrix = Matrix.multiply(translationMatrix, rotationMatrix);
-        matrix = Matrix.multiply(matrix, scaleMatrix);
-        matrix = Matrix.multiply(matrix, moveOriginMatrix);
+        // let matrix = scaleMatrix.multiply(projectionMatrix).multiply(moveOriginMatrix);
+        // let matrix = scaleMatrix.multiply(translationMatrix)
+                        //    .multiply(rotationMatrix)
+                        //    .multiply(projectionMatrix)
+                        //    .multiply(scaleMatrix)
+                        //    .multiply(moveOriginMatrix);
 
+        let matrix = projectionMatrix;
+        matrix = Matrix.translate(matrix, ...Vector.add(this.#transform, this.#offset));
+        matrix = Matrix.rotate(matrix, 0);
+        matrix = Matrix.scale(matrix, ...this.#scale);
 
         // Set the matrix.
         gl.uniformMatrix3fv(this.#matrixLocation, false, matrix);
@@ -328,11 +266,11 @@ export class Renderer {
     }
 
     get origin() {
-        return this.#layout.origin;
+        return this.#origin;
     }
 
     set origin(value) {
-        this.#layout.origin = value;
+        this.#origin = value;
     }
 
     get transform() {

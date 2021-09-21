@@ -34,10 +34,10 @@ export class Game {
         this.#drag = false;
         this.keyboardStates = new Map();
 
-        this.#mainCanvasGL.clearColor(0, 0, 0, 1);
-        this.#mainCanvasGL.clear(this.#mainCanvasGL.COLOR_BUFFER_BIT | this.#mainCanvasGL.DEPTH_BUFFER_BIT);
+        this.#worldMap = new WorldMap();
+        this.#renderer = new Renderer(this.#mainCanvasGL);
 
-        this.#loadLevel().then(this.#singleFrameUpdate.bind(this));
+        this.#loadLevel().then(this.#startFrameUpdate.bind(this));
     }
 
     *#calculateDataForRenderer() {
@@ -91,15 +91,10 @@ export class Game {
     }
 
     async #loadLevel() {
-        this.#worldMap = new WorldMap();
-
         // World Size 
         for await (const {p, t} of this.#worldMap.generate(1000, true, false)) {
             console.slog(`Generating map. ${p} / ${t}`);
         }
-
-        // Create renderer with center hexagon as origin
-        this.#renderer = new Renderer(this.#mainCanvasGL, this.#worldMap.centerHexagon);
 
         // Calculate vertices for WebGL
         for (const {p, t} of this.#calculateDataForRenderer()) {
@@ -162,6 +157,8 @@ export class Game {
     onPointerMove(pageX, pageY) {
         const pointer = new Point(pageX.toFixed(0), pageY.toFixed(0));
         this.#selectedHexagon = this.#renderer.pixelToHexagon(pointer.x, pointer.y);
+
+        this.#renderer.origin = pointer;
 
         if (this.#drag) {
 
