@@ -28,6 +28,51 @@ export class Polyfills {
         return new Point(x, y);
     }
 
+    /**
+     * 
+     * @param {Number} x 
+     * @param {Number} lower 
+     * @param {Number} upper 
+     * @returns {Number}
+     */
+    static clamp(x, lower, upper) {
+        return Math.min(Math.max(x, lower), upper);
+    }
+
+    /**
+     * 
+     * @param {Number} x 
+     * @param {Number} inLow 
+     * @param {Number} inHigh 
+     * @param {Number} outLow 
+     * @param {Number} outHigh 
+     * @returns {Number} 
+     */
+    static scale(x, inLow, inHigh, outLow, outHigh) {
+        return (x - inLow) * (outHigh - outLow) / (inHigh - inLow) + outLow;
+    }
+
+    /**
+     * 
+     * @param {Number} degrees 
+     * @returns {Number}
+     */
+    static radians(degrees) {
+        return degrees * Math.DEG_PER_RAD;
+    }
+
+    /**
+     * 
+     * @param {Number} radians 
+     * @returns {Number}
+     */
+    static degrees(radians) {
+        return radians * Math.RAD_PER_DEG;
+    }
+
+    static RAD_PER_DEG = 180 / Math.PI;
+    static DEG_PER_RAD = Math.PI / 180;
+
     static lastTimer = null;
     static lastTime = 0;
     static slog(m) {

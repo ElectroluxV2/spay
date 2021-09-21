@@ -293,14 +293,7 @@ export class Renderer {
     }
 
     set zoom(value) {
-        if (value > Renderer.#MAXIMUM_ZOOM_ARGUMENT) {
-            this.#currentZoomArgument = Renderer.#MAXIMUM_ZOOM_ARGUMENT;
-        } else if (value < Renderer.#MINIMUM_ZOOM_ARGUMENT) {
-            this.#currentZoomArgument = Renderer.#MINIMUM_ZOOM_ARGUMENT;
-        } else {
-            this.#currentZoomArgument = value;
-        }
-
+        this.#currentZoomArgument = Math.clamp(value,  Renderer.#MINIMUM_ZOOM_ARGUMENT, Renderer.#MAXIMUM_ZOOM_ARGUMENT);
         this.scale.x = this.scale.y = this.currentZoom;
     }
 }

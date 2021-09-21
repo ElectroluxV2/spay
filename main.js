@@ -109,3 +109,12 @@ window.onwheel = ({deltaX, deltaY}) => mainWorker.postMessage({
     deltaX: deltaX,
     deltaY: deltaY
 });
+
+
+// https://rwaldron.github.io/proposal-math-extensions/
+Math.RAD_PER_DEG = Polyfills.RAD_PER_DEG;
+Math.DEG_PER_RAD = Polyfills.DEG_PER_RAD;
+Math.clamp = Polyfills.clamp;
+Math.scale = Polyfills.scale;
+Math.radians = Polyfills.radians;
+Math.degrees = Polyfills.degrees;
