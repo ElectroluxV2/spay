@@ -84,8 +84,8 @@ export class Game {
         this.#renderer.vertices = vertices;
         this.#renderer.colors = colors;
 
-        this.#renderer.offset.x = this.#window.innerWidth / 2;
-        this.#renderer.offset.y = this.#window.innerHeight / 2;
+        // this.#renderer.offset.x = this.#window.innerWidth / 2;
+        // this.#renderer.offset.y = this.#window.innerHeight / 2;
 
         console.timeEnd('CALCULATE RENDERER DATA TOOK');
     }
@@ -158,9 +158,10 @@ export class Game {
         const pointer = new Point(pageX.toFixed(0), pageY.toFixed(0));
         this.#selectedHexagon = this.#renderer.pixelToHexagon(pointer.x, pointer.y);
 
-        this.#renderer.origin = pointer;
 
         if (this.#drag) {
+            // this.#renderer.origin = pointer;
+
 
             // const centerHexagon = this.#worldMap.centerHexagon;
             // const onScreenCenter = this.#renderer.hexagonToPixel(centerHexagon);
