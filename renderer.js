@@ -8,6 +8,7 @@ export class Renderer {
     static #BACKGROUND_COLOR = [0.25, 0.25, 0.25, 1];
     static #MAXIMUM_ZOOM_ARGUMENT = 4;
     static #MINIMUM_ZOOM_ARGUMENT = -8;
+    static #ZOOM_FUNCTION = x => Math.pow((x / 10) + 1, 2);
 
     #gl;
     #program;
@@ -21,8 +22,6 @@ export class Renderer {
     #scale;
     #layout;
     #currentZoomArgument;
-
-    #zoomFunction = x => Math.pow((x / 10) + 1, 2);
 
     #vertexCount;
 
@@ -124,7 +123,7 @@ export class Renderer {
     
         const fragmentShaderSource = 
             `#version 300 es
-            precision lowp float; // mediump, highp
+            precision highp float; // lowp, mediump, highp
     
             in vec3 vColor;
             out vec4 fragColor;
@@ -284,7 +283,7 @@ export class Renderer {
     }
 
     get currentZoom() {
-        return this.#zoomFunction(this.#currentZoomArgument);
+        return Renderer.#ZOOM_FUNCTION(this.#currentZoomArgument);
     }
 
     get zoom() {
