@@ -34,7 +34,7 @@ export class Game {
         this.#worldMap = new WorldMap();
         this.#renderer = new Renderer(this.#mainCanvasGL);
 
-        this.#loadLevel().then(this.#startFrameUpdate.bind(this));
+        this.#loadLevel().then(this.#drawSingleFrame.bind(this));
     }
 
     *#calculateDataForRenderer() {
@@ -86,7 +86,7 @@ export class Game {
 
     async #loadLevel() {
         // World Size 
-        for await (const {p, t} of this.#worldMap.generate(1000, true, false)) {
+        for await (const {p, t} of this.#worldMap.generate(50, true, false)) {
             console.slog(`Generating map. ${p} / ${t}`);
         }
 
@@ -144,14 +144,17 @@ export class Game {
 
         const pointer = new Point(pageX, pageY);
         this.#renderer.onPointerDrag(pointer);
+        this.#renderer.draw();
     }
 
     onWheel(deltaX, deltaY, pageX, pageY) {
         this.#renderer.doZoom(Math.sign(deltaY) * 0.1, new Point(pageX, pageY));
+        this.#renderer.draw();
     }
 
     pinchGesture(change, pageX, pageY) {
-        this.#renderer.doZoom(change, new Point(pageX, pageY));
+        this.#renderer.doZoom(change * -0.05, new Point(pageX, pageY));
+        this.#renderer.draw();
     }
 
     #drawSingleFrame() {

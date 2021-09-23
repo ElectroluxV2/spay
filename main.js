@@ -40,29 +40,26 @@ window.onkeyup = event => mainWorker.postMessage({
 // Etc. eg. PointerEvents
 window.onpointermove = ({pageX, pageY} = event) => {
     for (let i = 0; i < eventsCache.length; i++) {
-        if (event.pointerId == eventsCache[i].pointerId) {
+        if (event.pointerId === eventsCache[i].pointerId) {
             eventsCache[i] = event;
             break;
         }
     }
      
     // If two pointers are down, check for pinch gestures
-    if (eventsCache.length == 2) {
+    if (eventsCache.length === 2) {
         // Calculate the distance between the two pointers
-        const curDiff = Math.hypot(eventsCache[1].clientX - eventsCache[0].clientX, eventsCache[1].clientY - eventsCache[0].clientY); // Math.abs(eventsCache[0].clientX - eventsCache[1].clientX);
+        const curDiff = Math.hypot(eventsCache[1].clientX - eventsCache[0].clientX, eventsCache[1].clientY - eventsCache[0].clientY);
         
-        if (previousDifference > 0) {
-
-            // Minimum change
-            if (Math.abs(curDiff - previousDifference) > 0.2) {
-                // The distance between the two pointers
-                mainWorker.postMessage({
-                    function: 'pinchGesture',
-                    change: (curDiff - previousDifference) * 0.017, // Const modifier
-                    pageX: (eventsCache[1].clientX + eventsCache[0].clientX) / 2,
-                    pageY: (eventsCache[1].clientY + eventsCache[0].clientY) / 2
-                });
-            }
+        if (previousDifference > 0) {    
+            // The distance between the two pointers
+            mainWorker.postMessage({
+                function: 'pinchGesture',
+                change: curDiff - previousDifference,
+                pageX: (eventsCache[1].clientX + eventsCache[0].clientX) / 2,
+                pageY: (eventsCache[1].clientY + eventsCache[0].clientY) / 2
+            });
+            
         }
         
         // Cache the distance for the next move event 

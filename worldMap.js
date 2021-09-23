@@ -48,8 +48,8 @@ export class WorldMap {
     }
 
     async *generate() {
-        yield* this.#generatorV4(null, ...arguments);
-        // yield* this.#triangleMapGenerator(...arguments);
+        // yield* this.#generatorV4(null, ...arguments);
+        yield* this.#triangleMapGenerator(...arguments);
 
         this.#makeGroups();
     }  
