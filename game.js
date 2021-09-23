@@ -4,11 +4,9 @@ import { Renderer } from './renderer.js';
 import { WorldMap } from './worldMap.js';
 
 export class Game {
-    #mainCanvas;
     #mainCanvasGL;
     #window;
     #animationFrameId;
-    #thresholdFrameUpdateTimer;
 
     #renderer;
 
@@ -29,7 +27,6 @@ export class Game {
      */
     constructor(mainCanvas, window) {
         this.#window = window;
-        this.#mainCanvas = mainCanvas;
         this.#mainCanvasGL = mainCanvas.getContext('webgl2');
         this.#drag = false;
         this.keyboardStates = new Map();
@@ -111,16 +108,6 @@ export class Game {
         return this.#animationFrameId !== undefined;
     }
 
-    #singleFrameUpdate() {
-        this.#drawSingleFrame();
-    }
-
-    #thresholdFrameUpdate(timeToStop = 200) {
-        !this.#isFrameUpdateStarted() && this.#startFrameUpdate();
-        clearTimeout(this.#thresholdFrameUpdateTimer);
-        this.#thresholdFrameUpdateTimer = setTimeout(this.#stopFrameUpdate.bind(this), timeToStop);
-    }
-
     #stopFrameUpdate() {
         cancelAnimationFrame(this.#animationFrameId);
         this.#animationFrameId = undefined;
@@ -134,8 +121,6 @@ export class Game {
     onPointerDown(pageX, pageY) {
         this.#dragStart = new Point(pageX.toFixed(0), pageY.toFixed(0));
         this.#drag = true;
-
-        !this.#isFrameUpdateStarted() && this.#startFrameUpdate();
     }
 
     /**
@@ -145,8 +130,6 @@ export class Game {
      */
     onPointerUp(pageX, pageY) {
         this.#drag = false;
-
-        // this.#stopFrameUpdate();
     }
 
     /**
@@ -158,19 +141,7 @@ export class Game {
         const pointer = new Point(pageX.toFixed(0), pageY.toFixed(0));
         this.#selectedHexagon = this.#renderer.pixelToHexagon(pointer.x, pointer.y);
 
-
         if (this.#drag) {
-            // this.#renderer.origin = pointer;
-
-
-            // const centerHexagon = this.#worldMap.centerHexagon;
-            // const onScreenCenter = this.#renderer.hexagonToPixel(centerHexagon);
-
-            // console.log(pointer, onScreenCenter);
-
-            // const hexagonOnScreenCenter = this.#renderer.pixelToHexagon(new Point(this.#window.innerWidth / 2, this.#window.innerHeight / 2));
-            // console.log(centerHexagon, hexagonOnScreenCenter);
-
             const dx = this.#dragStart.x - pointer.x;
             const dy = this.#dragStart.y - pointer.y;
 
@@ -189,7 +160,6 @@ export class Game {
      */
     onWheel(deltaX, deltaY) {
         this.#renderer.zoom -= Math.sign(deltaY) * 0.1;
-        // this.#thresholdFrameUpdate();
     }
 
     pinchGesture(change) {

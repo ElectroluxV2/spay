@@ -256,7 +256,11 @@ export class Renderer {
         matrix = Matrix.scale(matrix, ...this.#scale);
 
         // Set the matrix.
-        gl.uniformMatrix3fv(this.#matrixLocation, false, matrix);
+        gl.uniformMatrix3fv(this.#matrixLocation, false, 
+            Matrix.projection(gl.canvas.width, gl.canvas.height)
+                       .translate(...Vector.add(this.#transform, this.#offset))
+                       .rotate(0)
+                       .scale(...this.#scale));
 
         // Draw latest triangles TODO: make this multi call instead of one big array
         gl.clear(gl.COLOR_BUFFER_BIT);
