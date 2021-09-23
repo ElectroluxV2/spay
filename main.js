@@ -58,7 +58,9 @@ window.onpointermove = ({pageX, pageY} = event) => {
                 // The distance between the two pointers
                 mainWorker.postMessage({
                     function: 'pinchGesture',
-                    change: (curDiff - previousDifference) * 0.017 // Const modifier
+                    change: (curDiff - previousDifference) * 0.017, // Const modifier
+                    pageX: (eventsCache[1].clientX + eventsCache[0].clientX) / 2,
+                    pageY: (eventsCache[1].clientY + eventsCache[0].clientY) / 2
                 });
             }
         }
@@ -104,10 +106,12 @@ window.onpointerup = ({pageX, pageY} = event) => {
     if (eventsCache.length < 2) previousDifference = -1;
 };
 
-window.onwheel = ({deltaX, deltaY}) => mainWorker.postMessage({
+window.onwheel = ({deltaX, deltaY, pageX, pageY}) => mainWorker.postMessage({
     function: 'onWheel',
     deltaX: deltaX,
-    deltaY: deltaY
+    deltaY: deltaY,
+    pageX: pageX,
+    pageY: pageY
 });
 
 

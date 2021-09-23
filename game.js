@@ -4,6 +4,7 @@ import { Renderer } from './renderer.js';
 import { WorldMap } from './worldMap.js';
 
 export class Game {
+    #mainCanvas;
     #mainCanvasGL;
     #window;
     #animationFrameId;
@@ -27,6 +28,7 @@ export class Game {
      */
     constructor(mainCanvas, window) {
         this.#window = window;
+        this.#mainCanvas = mainCanvas;
         this.#mainCanvasGL = mainCanvas.getContext('webgl2');
         this.#drag = false;
         this.keyboardStates = new Map();
@@ -80,9 +82,6 @@ export class Game {
 
         this.#renderer.vertices = vertices;
         this.#renderer.colors = colors;
-
-        // this.#renderer.offset.x = this.#window.innerWidth / 2;
-        // this.#renderer.offset.y = this.#window.innerHeight / 2;
 
         console.timeEnd('CALCULATE RENDERER DATA TOOK');
     }
@@ -145,8 +144,8 @@ export class Game {
             const dx = this.#dragStart.x - pointer.x;
             const dy = this.#dragStart.y - pointer.y;
 
-            this.#renderer.transform.x -= dx;
-            this.#renderer.transform.y -= dy;
+            this.#renderer.camera.x += dx;
+            this.#renderer.camera.y += dy;
 
             this.#dragStart.x -= dx;
             this.#dragStart.y -= dy;
@@ -155,15 +154,12 @@ export class Game {
         this.#lastPointer = pointer;
     }
 
-    /**
-     * @param {WheelEvent} WheelEvent 
-     */
-    onWheel(deltaX, deltaY) {
-        this.#renderer.zoom -= Math.sign(deltaY) * 0.1;
+    onWheel(deltaX, deltaY, pageX, pageY) {
+        this.#renderer.doZoom(Math.sign(deltaY) * 0.1, new Point(pageX, pageY));
     }
 
-    pinchGesture(change) {
-        this.#renderer.zoom += change;
+    pinchGesture(change, pageX, pageY) {
+        this.#renderer.doZoom(change, new Point(pageX, pageY));
     }
 
     #drawSingleFrame() {

@@ -25,10 +25,10 @@ const workerContext = {
     },
     onPointerDown: ({pageX, pageY}) => workerContext.game?.onPointerDown(pageX, pageY),
     onPointerUp: ({pageX, pageY}) => workerContext.game?.onPointerUp(pageX, pageY),
-    onWheel: ({deltaX, deltaY}) => {
-        workerContext.game?.onWheel(deltaX, deltaY);
+    onWheel: ({deltaX, deltaY, pageX, pageY}) => {
+        workerContext.game?.onWheel(deltaX, deltaY, pageX, pageY);
     },
-    pinchGesture: ({change}) => workerContext.game?.pinchGesture(change)
+    pinchGesture: ({change, pageX, pageY}) => workerContext.game?.pinchGesture(change, pageX, pageY)
 };
 
 onmessage = ({data} = event) => workerContext[data.function](data);

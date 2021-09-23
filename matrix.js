@@ -207,10 +207,10 @@ export class Matrix extends Array {
         const v0 = point[0];
         const v1 = point[1];
         const d = v0 * m[0 * 3 + 2] + v1 * m[1 * 3 + 2] + m[2 * 3 + 2];
-        return new Point([
+        return new Point(
           (v0 * m[0 * 3 + 0] + v1 * m[1 * 3 + 0] + m[2 * 3 + 0]) / d,
           (v0 * m[0 * 3 + 1] + v1 * m[1 * 3 + 1] + m[2 * 3 + 1]) / d,
-        ]);
+        );
     }
 
     /**

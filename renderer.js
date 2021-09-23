@@ -33,24 +33,6 @@ export class Renderer {
         zoom: 1,
     };
 
-    viewProjectionMat;
-
-    makeCameraMatrix() {
-        let cameraMat = Matrix.identity();
-        cameraMat = Matrix.translate(cameraMat, this.camera.x, this.camera.y);
-        cameraMat = Matrix.rotate(cameraMat, this.camera.rotation);
-        cameraMat = Matrix.scale(cameraMat, ...this.#scale);
-        return cameraMat;
-    }
-
-    makeViewProjection() {
-        // same as ortho(0, width, height, 0, -1, 1)
-        const projectionMat = Matrix.projection(this.#gl.canvas.width, this.#gl.canvas.height);
-        const cameraMat = this.makeCameraMatrix();
-        let viewMat = Matrix.inverse(cameraMat);
-        return Matrix.multiply(projectionMat, viewMat);
-    }
-
     /**
      * 
      * @param {WebGL2RenderingContext} gl
@@ -65,6 +47,8 @@ export class Renderer {
         this.#origin = new Point(0, 0);
         this.#layout = new Layout(Orientation.FLAT, Renderer.#HEXAGON_SIZE, new Point(0, 0));
         this.#currentZoomArgument = 0;
+
+        // this.updateViewProjection();
     }
 
     /**
@@ -234,24 +218,77 @@ export class Renderer {
         gl.enableVertexAttribArray(1);
     }
 
+    viewProjectionMat;
+
+    updateViewProjection() {
+        const projectionMat = Matrix.projection(this.#gl.canvas.width, this.#gl.canvas.height);
+
+        let cameraMat = Matrix.identity();
+        cameraMat = Matrix.translate(cameraMat, this.camera.x, this.camera.y);
+        cameraMat = Matrix.translate(cameraMat, this.#transform.x, this.#transform.y);
+        cameraMat = Matrix.rotate(cameraMat, this.camera.rotation);
+        cameraMat = Matrix.scale(cameraMat, ...this.#scale);
+
+        const viewMat = Matrix.inverse(cameraMat);
+        this.viewProjectionMat = Matrix.multiply(projectionMat, viewMat);
+    }
+
+    curr = 0;
     draw() {
         // console.time('DRAW');
         const gl = this.#gl;
 
-        // Compute the matrices
-        const matrix = Matrix.projection(gl.canvas.width, gl.canvas.height)
-                             .translate(...Vector.add(this.#transform, this.#offset))
-                             .rotate(0)
-                             .scale(...this.#scale);
-                             
+        this.curr += 0.01;
+
+        if (false && Math.sign(Math.tan(this.curr)) === 1)
+            this.doZoom(Math.sign(Math.sin(this.curr)) * 0.01, new Point(this.camera.x, this.camera.y));
+        
+
+        this.updateViewProjection();
+
+
         // Set the matrix.
-        gl.uniformMatrix3fv(this.#matrixLocation, false, matrix);
+        gl.uniformMatrix3fv(this.#matrixLocation, false, this.viewProjectionMat);
 
         // Draw latest triangles TODO: make this multi call instead of one big array
         gl.clear(gl.COLOR_BUFFER_BIT);
         gl.drawArrays(gl.TRIANGLES, 0, this.#vertexCount);
         
         // console.timeEnd('DRAW');
+    }
+
+    /**
+     * 
+     * @param {Point} pointer 
+     * @returns {Point}
+     */
+    getClipSpacePosition(pointer) {
+        const normalizedX = pointer.x / this.#gl.canvas.width;
+        const normalizedY = pointer.y / this.#gl.canvas.height;
+      
+        // convert to clip space
+        const clipX = normalizedX *  2 - 1;
+        const clipY = normalizedY * -2 + 1;
+        
+        return new Point(clipX, clipY);
+    }
+
+    doZoom(change, pointer) {
+        const clip = this.getClipSpacePosition(pointer);
+
+        // position before zooming
+        const preZoom = Matrix.transformPoint(Matrix.inverse(this.viewProjectionMat), new Point(clip.x, clip.y));
+
+        this.zoom += change;
+
+        this.updateViewProjection();
+
+        // position after zooming
+        const postZoom = Matrix.transformPoint(Matrix.inverse(this.viewProjectionMat), new Point(clip.x, clip.y));
+
+        // camera needs to be moved the difference of before and after
+        this.camera.x += preZoom.x - postZoom.x;
+        this.camera.y += preZoom.y - postZoom.y;
     }
 
     get origin() {
