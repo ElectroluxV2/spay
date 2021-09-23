@@ -16,8 +16,6 @@ export class Game {
     #selectedHexagon;
 
     #drag;
-    #dragStart;
-    #lastPointer;
 
     keyboardStates;
 
@@ -118,8 +116,10 @@ export class Game {
      * @param {Number} pageY 
      */
     onPointerDown(pageX, pageY) {
-        this.#dragStart = new Point(pageX.toFixed(0), pageY.toFixed(0));
         this.#drag = true;
+
+        const pointer = new Point(pageX, pageY);
+        this.#renderer.onPointerDown(pointer);
     }
 
     /**
@@ -129,6 +129,9 @@ export class Game {
      */
     onPointerUp(pageX, pageY) {
         this.#drag = false;
+
+        const pointer = new Point(pageX, pageY);
+        this.#renderer.onPointerUp(pointer);
     }
 
     /**
@@ -137,21 +140,10 @@ export class Game {
      * @param {Number} pageY 
      */
     onPointerMove(pageX, pageY) {
-        const pointer = new Point(pageX.toFixed(0), pageY.toFixed(0));
-        this.#selectedHexagon = this.#renderer.pixelToHexagon(pointer.x, pointer.y);
+        if (!this.#drag) return;
 
-        if (this.#drag) {
-            const dx = this.#dragStart.x - pointer.x;
-            const dy = this.#dragStart.y - pointer.y;
-
-            this.#renderer.camera.x += dx;
-            this.#renderer.camera.y += dy;
-
-            this.#dragStart.x -= dx;
-            this.#dragStart.y -= dy;
-        }
-
-        this.#lastPointer = pointer;
+        const pointer = new Point(pageX, pageY);
+        this.#renderer.onPointerDrag(pointer);
     }
 
     onWheel(deltaX, deltaY, pageX, pageY) {

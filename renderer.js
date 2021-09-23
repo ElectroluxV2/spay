@@ -185,11 +185,6 @@ export class Renderer {
         }
     };
 
-
-    onWindowResize() {
-        
-    }
-
     /**
      * @param {Float32Array} value
      */
@@ -291,40 +286,34 @@ export class Renderer {
         this.camera.y += preZoom.y - postZoom.y;
     }
 
-    get origin() {
-        return this.#origin;
+
+    startInvViewProjMat;
+    startCamera;
+    startPos;
+    startClipPos;
+    startMousePos;
+
+    moveCamera(pointer) {
+        const pos = Matrix.transformPoint(this.startInvViewProjMat, this.getClipSpacePosition(pointer));
+          
+        this.camera.x = this.startCamera.x + this.startPos.x - pos.x;
+        this.camera.y = this.startCamera.y + this.startPos.y - pos.y;
     }
 
-    set origin(value) {
-        this.#origin = value;
+    onPointerDown(pointer) {
+        this.startInvViewProjMat = Matrix.inverse(this.viewProjectionMat);
+        this.startCamera = Object.assign({}, this.camera);
+        this.startClipPos = this.getClipSpacePosition(pointer);
+        this.startPos = Matrix.transformPoint(this.startInvViewProjMat, this.startClipPos);
+        this.startMousePos = pointer;
     }
 
-    get transform() {
-        return this.#transform;
+    onPointerDrag(pointer) {
+        this.moveCamera(pointer);
     }
 
-    set transform(value) {
-        this.#transform = value;
-    }
-
-    set offset(value) {
-        this.#offset = value;
-    }
-
-    get offset() {
-        return this.#offset;
-    }
-
-    get scale() {
-        return this.#scale;
-    }
-
-    set scale(value) {
-        this.#scale = value;
-    }
-
-    get layout() {
-        return this.#layout;
+    onPointerUp(pointer) {
+        
     }
 
     get currentZoom() {
@@ -337,6 +326,6 @@ export class Renderer {
 
     set zoom(value) {
         this.#currentZoomArgument = Math.clamp(value,  Renderer.#MINIMUM_ZOOM_ARGUMENT, Renderer.#MAXIMUM_ZOOM_ARGUMENT);
-        this.scale.x = this.scale.y = this.currentZoom;
+        this.#scale.x = this.#scale.y = this.currentZoom;
     }
 }
