@@ -33,6 +33,24 @@ export class Renderer {
         zoom: 1,
     };
 
+    viewProjectionMat;
+
+    makeCameraMatrix() {
+        let cameraMat = Matrix.identity();
+        cameraMat = Matrix.translate(cameraMat, this.camera.x, this.camera.y);
+        cameraMat = Matrix.rotate(cameraMat, this.camera.rotation);
+        cameraMat = Matrix.scale(cameraMat, ...this.#scale);
+        return cameraMat;
+    }
+
+    makeViewProjection() {
+        // same as ortho(0, width, height, 0, -1, 1)
+        const projectionMat = Matrix.projection(this.#gl.canvas.width, this.#gl.canvas.height);
+        const cameraMat = this.makeCameraMatrix();
+        let viewMat = Matrix.inverse(cameraMat);
+        return Matrix.multiply(projectionMat, viewMat);
+    }
+
     /**
      * 
      * @param {WebGL2RenderingContext} gl
@@ -216,51 +234,18 @@ export class Renderer {
         gl.enableVertexAttribArray(1);
     }
 
-    makeCameraMatrix() {
-        let cameraMat = Matrix.identity();
-        cameraMat = Matrix.translate(cameraMat, this.camera.x, this.camera.y);
-        cameraMat = Matrix.rotate(cameraMat, this.camera.rotation);
-        cameraMat = Matrix.scale(cameraMat, ...this.#scale);
-        return cameraMat;
-    }
-
-    makeViewProjection() {
-        // same as ortho(0, width, height, 0, -1, 1)
-        const projectionMat = Matrix.projection(this.#gl.canvas.width, this.#gl.canvas.height);
-        const cameraMat = this.makeCameraMatrix();
-        let viewMat = Matrix.inverse(cameraMat);
-        return Matrix.multiply(projectionMat, viewMat);
-    }
-
     draw() {
         // console.time('DRAW');
         const gl = this.#gl;
 
         // Compute the matrices
-        const projectionMatrix = Matrix.projection(gl.canvas.width, gl.canvas.height);
-        const translationMatrix = Matrix.translation(...Vector.add(this.#transform, this.#offset));
-        const rotationMatrix = Matrix.rotation(0);
-        const scaleMatrix = Matrix.scaling(...this.#scale);
-        const moveOriginMatrix = Matrix.translation(...this.#origin);
-
-        // let matrix = scaleMatrix.multiply(projectionMatrix).multiply(moveOriginMatrix);
-        // let matrix = scaleMatrix.multiply(translationMatrix)
-                        //    .multiply(rotationMatrix)
-                        //    .multiply(projectionMatrix)
-                        //    .multiply(scaleMatrix)
-                        //    .multiply(moveOriginMatrix);
-
-        let matrix = projectionMatrix;
-        matrix = Matrix.translate(matrix, ...Vector.add(this.#transform, this.#offset));
-        matrix = Matrix.rotate(matrix, 0);
-        matrix = Matrix.scale(matrix, ...this.#scale);
-
+        const matrix = Matrix.projection(gl.canvas.width, gl.canvas.height)
+                             .translate(...Vector.add(this.#transform, this.#offset))
+                             .rotate(0)
+                             .scale(...this.#scale);
+                             
         // Set the matrix.
-        gl.uniformMatrix3fv(this.#matrixLocation, false, 
-            Matrix.projection(gl.canvas.width, gl.canvas.height)
-                       .translate(...Vector.add(this.#transform, this.#offset))
-                       .rotate(0)
-                       .scale(...this.#scale));
+        gl.uniformMatrix3fv(this.#matrixLocation, false, matrix);
 
         // Draw latest triangles TODO: make this multi call instead of one big array
         gl.clear(gl.COLOR_BUFFER_BIT);
