@@ -17,21 +17,26 @@ export class Renderer {
 
     #matrixLocation;
 
-    #transform;
-    #offset;
-    #origin;
-    #scale;
-    #layout;
-    #currentZoomArgument;
+    #layout = new Layout(Orientation.FLAT, Renderer.#HEXAGON_SIZE, new Point(0, 0));
+    #currentZoomArgument = 0;
 
     #vertexCount;
 
-    camera = {
+    #camera = {
         x: 0,
         y: 0,
         rotation: 0,
-        zoom: 1,
+        scale: new Point(1, 1)
     };
+
+    #start = {
+        invertedViewProjectionMatrix: null,
+        camera: null,
+        position: null,
+        clipPosition: null,
+    };
+
+    #viewProjectionMatrix;
 
     /**
      * 
@@ -40,13 +45,6 @@ export class Renderer {
     constructor(gl) {
         this.#gl = gl;
         this.#load();
-
-        this.#scale = new Point(1, 1);
-        this.#transform = new Point(0, 0);
-        this.#offset = new Point(0, 0);
-        this.#origin = new Point(0, 0);
-        this.#layout = new Layout(Orientation.FLAT, Renderer.#HEXAGON_SIZE, new Point(0, 0));
-        this.#currentZoomArgument = 0;
 
         // this.updateViewProjection();
     }
@@ -70,9 +68,9 @@ export class Renderer {
      */
     hexagonToPixel(hexagon) {
         const o = this.#layout.orientation;
-        const x = (o.f[0] * hexagon.q + o.f[1] * hexagon.r) * this.#layout.size.x * this.scale.x;
-        const y = (o.f[2] * hexagon.q + o.f[3] * hexagon.r) * this.#layout.size.y * this.scale.y;
-        return new Point(x + this.#transform.x + this.#offset.x, y + this.#transform.y + this.#offset.y);
+        const x = (o.f[0] * hexagon.q + o.f[1] * hexagon.r) * this.#layout.size.x * this.#camera.scale.x;
+        const y = (o.f[2] * hexagon.q + o.f[3] * hexagon.r) * this.#layout.size.y * this.#camera.scale.y;
+        return new Point(x + this.#camera.x, y + this.#camera.y);
     }
 
     /**
@@ -82,7 +80,7 @@ export class Renderer {
      */
     pixelToHexagon(pixel) {
         const o = this.#layout.orientation;
-        const pt = new Point((pixel.x - this.#transform.x - this.#offset.x) / (this.#layout.size.x * this.#scale.x), (pixel.y - this.#transform.y - this.#offset.y) / (this.#layout.size.y * this.#scale.y));
+        const pt = new Point((pixel.x - this.#camera.x) / (this.#layout.size.x * this.#camera.scale.x), (pixel.y - this.#camera.y) / (this.#layout.size.y * this.#camera.scale.y));
         const q = o.b[0] * pt.x + o.b[1] * pt.y;
         const r = o.b[2] * pt.x + o.b[3] * pt.y;
         const s = -q - r;
@@ -213,19 +211,16 @@ export class Renderer {
         gl.enableVertexAttribArray(1);
     }
 
-    viewProjectionMat;
-
-    updateViewProjection() {
+    #updateViewProjectionMatrix() {
         const projectionMat = Matrix.projection(this.#gl.canvas.width, this.#gl.canvas.height);
 
-        let cameraMat = Matrix.identity();
-        cameraMat = Matrix.translate(cameraMat, this.camera.x, this.camera.y);
-        cameraMat = Matrix.translate(cameraMat, this.#transform.x, this.#transform.y);
-        cameraMat = Matrix.rotate(cameraMat, this.camera.rotation);
-        cameraMat = Matrix.scale(cameraMat, ...this.#scale);
+        const cameraMat = Matrix.identity()
+                                .translate(this.#camera.x, this.#camera.y)
+                                .rotate(this.#camera.rotation)
+                                .scale(...this.#camera.scale);
 
         const viewMat = Matrix.inverse(cameraMat);
-        this.viewProjectionMat = Matrix.multiply(projectionMat, viewMat);
+        this.#viewProjectionMatrix = Matrix.multiply(projectionMat, viewMat);
     }
 
     curr = 0;
@@ -233,17 +228,14 @@ export class Renderer {
         // console.time('DRAW');
         const gl = this.#gl;
 
-        this.curr += 0.01;
-
-        if (false && Math.sign(Math.tan(this.curr)) === 1)
-            this.doZoom(Math.sign(Math.sin(this.curr)) * 0.01, new Point(this.camera.x, this.camera.y));
+        if (false && Math.sign(Math.tan((this.curr += 0.01))) === 1)
+            this.doZoom(Math.sign(Math.sin(this.curr)) * 0.01, new Point(this.#camera.x, this.#camera.y));
         
 
-        this.updateViewProjection();
-
+        this.#updateViewProjectionMatrix();
 
         // Set the matrix.
-        gl.uniformMatrix3fv(this.#matrixLocation, false, this.viewProjectionMat);
+        gl.uniformMatrix3fv(this.#matrixLocation, false, this.#viewProjectionMatrix);
 
         // Draw latest triangles TODO: make this multi call instead of one big array
         gl.clear(gl.COLOR_BUFFER_BIT);
@@ -272,40 +264,32 @@ export class Renderer {
         const clip = this.getClipSpacePosition(pointer);
 
         // position before zooming
-        const preZoom = Matrix.transformPoint(Matrix.inverse(this.viewProjectionMat), new Point(clip.x, clip.y));
+        const preZoom = Matrix.transformPoint(Matrix.inverse(this.#viewProjectionMatrix), new Point(clip.x, clip.y));
 
         this.zoom += change;
 
-        this.updateViewProjection();
+        this.#updateViewProjectionMatrix();
 
         // position after zooming
-        const postZoom = Matrix.transformPoint(Matrix.inverse(this.viewProjectionMat), new Point(clip.x, clip.y));
+        const postZoom = Matrix.transformPoint(Matrix.inverse(this.#viewProjectionMatrix), new Point(clip.x, clip.y));
 
         // camera needs to be moved the difference of before and after
-        this.camera.x += preZoom.x - postZoom.x;
-        this.camera.y += preZoom.y - postZoom.y;
+        this.#camera.x += preZoom.x - postZoom.x;
+        this.#camera.y += preZoom.y - postZoom.y;
     }
 
-
-    startInvViewProjMat;
-    startCamera;
-    startPos;
-    startClipPos;
-    startMousePos;
-
     moveCamera(pointer) {
-        const pos = Matrix.transformPoint(this.startInvViewProjMat, this.getClipSpacePosition(pointer));
+        const pos = Matrix.transformPoint(this.#start.invertedViewProjectionMatrix, this.getClipSpacePosition(pointer));
           
-        this.camera.x = this.startCamera.x + this.startPos.x - pos.x;
-        this.camera.y = this.startCamera.y + this.startPos.y - pos.y;
+        this.#camera.x = this.#start.camera.x + this.#start.position.x - pos.x;
+        this.#camera.y = this.#start.camera.y + this.#start.position.y - pos.y;
     }
 
     onPointerDown(pointer) {
-        this.startInvViewProjMat = Matrix.inverse(this.viewProjectionMat);
-        this.startCamera = Object.assign({}, this.camera);
-        this.startClipPos = this.getClipSpacePosition(pointer);
-        this.startPos = Matrix.transformPoint(this.startInvViewProjMat, this.startClipPos);
-        this.startMousePos = pointer;
+        this.#start.invertedViewProjectionMatrix = Matrix.inverse(this.#viewProjectionMatrix);
+        this.#start.camera = Object.assign({}, this.#camera);
+        this.#start.clipPosition = this.getClipSpacePosition(pointer);
+        this.#start.position = Matrix.transformPoint(this.#start.invertedViewProjectionMatrix, this.#start.clipPosition);
     }
 
     onPointerDrag(pointer) {
@@ -326,6 +310,6 @@ export class Renderer {
 
     set zoom(value) {
         this.#currentZoomArgument = Math.clamp(value,  Renderer.#MINIMUM_ZOOM_ARGUMENT, Renderer.#MAXIMUM_ZOOM_ARGUMENT);
-        this.#scale.x = this.#scale.y = this.currentZoom;
+        this.#camera.scale.x = this.#camera.scale.y = this.currentZoom;
     }
 }
